@@ -17,11 +17,17 @@ interface SimStore {
   constraints: ConstraintStatus | null
   isIllustrative: boolean
 
+  /** Reference (pinned) scenario for KPI delta comparison */
+  referenceResult: SimResult | null
+  referenceLabel: string | null
+
   setScenario: (scenario: Scenario, isIllustrative: boolean) => void
   setPolicy: (policy: Policy) => void
   updatePolicyRock: (lineIndex: number, year: number, value: number) => void
   updatePolicyCapex: (lineIndex: number, year: number, value: number) => void
   updatePolicyRd: (lineIndex: number, year: number, value: number) => void
+  pinReference: (label: string) => void
+  clearReference: () => void
 }
 
 function runSim(scenario: Scenario, policy: Policy) {
@@ -36,6 +42,8 @@ export const useSimStore = create<SimStore>((set, get) => ({
   result: null,
   constraints: null,
   isIllustrative: true,
+  referenceResult: null,
+  referenceLabel: null,
 
   setScenario: (scenario, isIllustrative) => {
     const policy = buildEqualPolicy(scenario)
@@ -82,4 +90,12 @@ export const useSimStore = create<SimStore>((set, get) => ({
     const { result, constraints } = runSim(scenario, newPolicy)
     set({ policy: newPolicy, result, constraints })
   },
+
+  pinReference: (label) => {
+    const { result } = get()
+    if (!result) return
+    set({ referenceResult: result, referenceLabel: label })
+  },
+
+  clearReference: () => set({ referenceResult: null, referenceLabel: null }),
 }))

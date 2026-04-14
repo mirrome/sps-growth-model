@@ -1,13 +1,16 @@
 /**
- * Center pane — KPI tiles, charts, and constraint status strip.
+ * Center pane — KPI tiles, charts, constraint status strip.
  *
- * Phase 2: KPI tiles implemented.
- * Phase 3: All 8 charts and constraint strip added.
+ * Phase 2: KPI tiles.
+ * Phase 3: All 8 charts and constraint strip.
+ * Phase 6: Reference pinning, delta display, dashboard export.
  */
 
+import { useRef } from 'react'
 import { useSimStore } from '../store/useSimStore'
 import { AllCharts } from './Charts'
 import { ConstraintStrip } from './ConstraintStrip'
+import { exportChartAsPng } from './chartUtils'
 
 interface KpiTileProps {
   label: string
@@ -51,10 +54,15 @@ function fmt(value: number, decimals = 0): string {
 }
 
 export function OutputsPane() {
+  const dashboardRef = useRef<HTMLElement>(null)
   const result = useSimStore((s) => s.result)
   const scenario = useSimStore((s) => s.scenario)
   const policy = useSimStore((s) => s.policy)
   const constraints = useSimStore((s) => s.constraints)
+  const referenceResult = useSimStore((s) => s.referenceResult)
+  const referenceLabel = useSimStore((s) => s.referenceLabel)
+  const pinReference = useSimStore((s) => s.pinReference)
+  const clearReference = useSimStore((s) => s.clearReference)
 
   if (!result || !scenario || !policy || !constraints) {
     return (
@@ -80,8 +88,56 @@ export function OutputsPane() {
         ? 'warn'
         : 'normal'
 
+  const refNPV = referenceResult?.npv
+  const refNPVExTV = referenceResult?.npvExTV
+  const refTermRev = referenceResult
+    ? referenceResult.lines.reduce((sum, line) => sum + line.revenue[T], 0)
+    : null
+  const refPeakLev = referenceResult
+    ? Math.max(
+        ...referenceResult.debt.map((d, t) =>
+          referenceResult.ebitda[t] > 0 ? d / referenceResult.ebitda[t] : 0,
+        ),
+      )
+    : null
+
+  function deltaStr(now: number, ref: number | undefined): string | undefined {
+    if (ref === undefined || ref === null) return undefined
+    return `${fmt(now - ref)} vs "${referenceLabel ?? 'reference'}"`
+  }
+  function deltaPos(now: number, ref: number | undefined): boolean | undefined {
+    if (ref === undefined || ref === null) return undefined
+    return now >= ref
+  }
+
   return (
-    <main className="h-full overflow-y-auto bg-gray-50 p-6">
+    <main ref={dashboardRef} className="h-full overflow-y-auto bg-gray-50 p-6">
+      {/* Top action bar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => pinReference(scenario.meta.name)}
+            className="text-xs border border-gray-300 text-gray-600 rounded px-3 py-1.5 hover:bg-gray-100 transition-colors"
+          >
+            📌 Pin as reference
+          </button>
+          {referenceResult && (
+            <button
+              onClick={clearReference}
+              className="text-xs border border-amber-300 text-amber-700 rounded px-3 py-1.5 hover:bg-amber-50 transition-colors"
+            >
+              ✕ Clear reference ({referenceLabel})
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => exportChartAsPng(dashboardRef.current, 'sps-dashboard')}
+          className="text-xs bg-gray-700 text-white rounded px-3 py-1.5 hover:bg-gray-800 transition-colors"
+        >
+          ↓ Export dashboard PNG
+        </button>
+      </div>
+
       {/* KPI Tiles */}
       <section className="mb-8">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -93,19 +149,35 @@ export function OutputsPane() {
             value={fmt(npvWithTV)}
             unit="USD millions"
             highlight={npvWithTV < 0 ? 'danger' : 'normal'}
+            delta={deltaStr(npvWithTV, refNPV)}
+            deltaPositive={deltaPos(npvWithTV, refNPV)}
           />
           <KpiTile
             label="NPV (excl. terminal value)"
             value={fmt(npvExTV)}
             unit="USD millions"
             highlight={npvExTV < 0 ? 'warn' : 'normal'}
+            delta={deltaStr(npvExTV, refNPVExTV)}
+            deltaPositive={deltaPos(npvExTV, refNPVExTV)}
           />
-          <KpiTile label={`Revenue — Year ${T}`} value={fmt(terminalRevenue)} unit="USD millions" />
+          <KpiTile
+            label={`Revenue — Year ${T}`}
+            value={fmt(terminalRevenue)}
+            unit="USD millions"
+            delta={refTermRev !== null ? deltaStr(terminalRevenue, refTermRev) : undefined}
+            deltaPositive={refTermRev !== null ? deltaPos(terminalRevenue, refTermRev) : undefined}
+          />
           <KpiTile
             label="Peak leverage (D/EBITDA)"
             value={fmt(peakLeverage, 2)}
             unit={`× (ceiling ${scenario.corporate.leverageMax}×)`}
             highlight={leverageHighlight}
+            delta={refPeakLev !== null ? deltaStr(peakLeverage, refPeakLev) : undefined}
+            deltaPositive={
+              refPeakLev !== null
+                ? deltaPos(-peakLeverage, refPeakLev ? -refPeakLev : undefined)
+                : undefined
+            }
           />
         </div>
       </section>
