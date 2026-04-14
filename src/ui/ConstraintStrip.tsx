@@ -3,6 +3,14 @@
  *
  * Shows, for each constraint family, whether it is satisfied, binding, or violated
  * in any year. Red for violation, amber for binding (< 5% slack), green for satisfied.
+ *
+ * Six indicators (2 rows of 3):
+ *   Rock supply | Capex budget | Leverage
+ *   Debt gate   | Legacy floors | Capacity bounds
+ *
+ * "Capex budget" catches "total funding (cash + allowed debt) is insufficient."
+ * "Debt gate" catches specifically "we are trying to raise debt in years we cannot."
+ * These are deliberately separate so the user can diagnose the binding constraint.
  */
 
 import type { ConstraintStatus } from '../engine/types'
@@ -54,11 +62,18 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
   // Rock supply
   const rock = summarizeStatuses(status.rockSupply)
 
-  // Capex budget
+  // Capex budget (cash + allowed debt)
   const capex = summarizeStatuses(status.capexBudget)
 
   // Leverage
   const leverage = summarizeStatuses(status.leverage.filter((s) => isFinite(s.slack)))
+
+  // Debt-raising gate (only gate-years contribute; open years have slack=Infinity)
+  const gateYears = status.debtGate.filter((s) => isFinite(s.slack))
+  const debtGateActive = gateYears.length > 0
+  const gate = debtGateActive
+    ? summarizeStatuses(gateYears)
+    : { allSatisfied: true, binding: false, worstSlack: Infinity }
 
   // Legacy floors (all legacy lines, all years)
   const legacyStatuses = status.legacyFloor.flat().filter((s) => s !== null) as {
@@ -92,7 +107,7 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
           </span>
         )}
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Indicator
           label="Rock supply"
           satisfied={rock.allSatisfied}
@@ -121,6 +136,18 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
             leverage.allSatisfied
               ? `Headroom: ${leverage.worstSlack.toFixed(2)}×`
               : `Exceeds by ${(-leverage.worstSlack).toFixed(2)}×`
+          }
+        />
+        <Indicator
+          label="Debt-raising gate"
+          satisfied={gate.allSatisfied}
+          binding={gate.binding}
+          detail={
+            !debtGateActive
+              ? 'No gate years in scenario'
+              : gate.allSatisfied
+                ? `Slack: ${fmtM(gate.worstSlack)}`
+                : `Over cash by ${fmtM(-gate.worstSlack)}`
           }
         />
         <Indicator

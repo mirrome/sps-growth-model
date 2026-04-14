@@ -10,7 +10,7 @@
   "corporate": {
     "taxRate": 0.28,
     "rD": 0.062,
-    "rE": 0.149,
+    "rE": 0.1454,
     "equity0": 900,
     "debt0": 900,
     "leverageMax": 2.75,

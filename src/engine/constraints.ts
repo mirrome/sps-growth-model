@@ -1,5 +1,5 @@
 /**
- * Constraint evaluator — checks all 5 constraint families from §3.8.
+ * Constraint evaluator — checks all constraint families from §3.8.
  *
  * Pure function: takes a Scenario, Policy, and SimResult,
  * returns ConstraintStatus with slack/violation for every year.
@@ -28,11 +28,42 @@ export function evaluateConstraints(
     return { satisfied: totalRock <= limit, slack: limit - totalRock, value: totalRock, limit }
   })
 
-  // §3.8.2 Capex budget: Σ I_{i,t} ≤ C_t + ΔD_t
-  // Simplified: total capex ≤ positive FCF + net new debt raised
+  // §3.8.2a Debt-raising gate: when canRaiseDebt[t] = false, the firm may not issue new debt,
+  // so total capex is limited to internally generated cash (C_t = max(FCF_t, 0)).
+  // Entries for years when canRaiseDebt[t] = true are always satisfied (limit = +∞).
+  const debtGate: ConstraintYearStatus[] = Array.from({ length: T + 1 }, (_, t) => {
+    const canRaise = scenario.corporate.canRaiseDebt?.[t] ?? true
+    if (canRaise) {
+      return { satisfied: true, slack: Infinity, value: 0, limit: Infinity }
+    }
+    const totalCapex = policy.capex.reduce((sum, lineCx) => sum + (lineCx[t] ?? 0), 0)
+    const cashAvailable = Math.max(result.fcf[t], 0)
+    return {
+      satisfied: totalCapex <= cashAvailable + 1e-6,
+      slack: cashAvailable - totalCapex,
+      value: totalCapex,
+      limit: cashAvailable,
+    }
+  })
+
+  // §3.8.2b Capex budget: Σ I_{i,t} ≤ C_t + ΔD_t
+  // When canRaiseDebt[t] = false: ΔD_t = 0 (same rule as debt gate, shown separately in UI).
+  // When canRaiseDebt[t] = true: ΔD_t = net new debt raised in year t per the simulation.
   const capexBudget: ConstraintYearStatus[] = Array.from({ length: T + 1 }, (_, t) => {
     const totalCapex = policy.capex.reduce((sum, lineCx) => sum + (lineCx[t] ?? 0), 0)
     const cashAvailable = Math.max(result.fcf[t], 0)
+    const canRaise = scenario.corporate.canRaiseDebt?.[t] ?? true
+
+    if (!canRaise) {
+      // No debt allowed — capex limit is cash-only (debtGate already surfaces this)
+      return {
+        satisfied: totalCapex <= cashAvailable + 1e-6,
+        slack: cashAvailable - totalCapex,
+        value: totalCapex,
+        limit: cashAvailable,
+      }
+    }
+
     const debtPrev = t === 0 ? scenario.corporate.debt0 : result.debt[t - 1]
     const debtNow = result.debt[t]
     const newDebt = Math.max(debtNow - debtPrev, 0)
@@ -84,10 +115,11 @@ export function evaluateConstraints(
 
   const anyViolation =
     rockSupply.some((s) => !s.satisfied) ||
+    debtGate.some((s) => !s.satisfied) ||
     capexBudget.some((s) => !s.satisfied) ||
     leverage.some((s) => !s.satisfied) ||
     legacyFloor.some((lineStatuses) => lineStatuses.some((s) => s !== null && !s.satisfied)) ||
     capacity.some((lineStatuses) => lineStatuses.some((s) => !s.satisfied))
 
-  return { rockSupply, capexBudget, leverage, legacyFloor, capacity, anyViolation }
+  return { rockSupply, debtGate, capexBudget, leverage, legacyFloor, capacity, anyViolation }
 }

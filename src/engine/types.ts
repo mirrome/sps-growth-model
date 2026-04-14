@@ -73,6 +73,13 @@ export interface CorporateParams {
   terminalGrowth: number
   /** Dep_t — tax depreciation by year (USD millions), length T+1 */
   depreciation: number[]
+  /**
+   * canRaiseDebt[t] — whether the firm may issue new debt in year t.
+   * When false, capex is strictly limited to internally generated cash (C_t).
+   * When true, the leverage-ceiling-constrained debt-raise headroom also applies.
+   * Optional field; if absent every year defaults to true.
+   */
+  canRaiseDebt?: boolean[]
 }
 
 /** Top-level scenario file structure. */
@@ -176,6 +183,11 @@ export interface ConstraintStatus {
   /** Indexed [lineIndex][year] for legacy lines only */
   legacyFloor: (ConstraintYearStatus | null)[][]
   capacity: ConstraintYearStatus[][]
+  /**
+   * Debt-raising gate: in years where canRaiseDebt[t]=false, total capex must not
+   * exceed internally generated cash. Entries are always satisfied when canRaiseDebt[t]=true.
+   */
+  debtGate: ConstraintYearStatus[]
   /** True if any constraint is violated in any year */
   anyViolation: boolean
 }

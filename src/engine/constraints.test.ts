@@ -183,6 +183,83 @@ describe('§3.8.5 Capacity constraint', () => {
   })
 })
 
+describe('§3.8.2 Debt-raising gate', () => {
+  it('flags a violation when capex is attempted in a no-debt year with no cash (PM test)', () => {
+    // PM spec: "capex attempted in year 2026 with canRaiseDebt[0]=false and C_0=0
+    // must flag a constraint violation."
+    // We set up a zero-EBITDA scenario so FCF[0] = Tc*Dep - Capex < 0 → cashAvailable = 0.
+    const scenario: Scenario = {
+      ...makeScenario(),
+      corporate: {
+        ...makeScenario().corporate,
+        depreciation: [0, 0, 0, 0], // no depreciation → FCF = EBITDA*(1-Tc) - Capex
+        canRaiseDebt: [false, true, true, true],
+      },
+    }
+    // Zero rock → zero EBITDA → FCF[0] = -totalCapex → cashAvailable = 0
+    const policy: Policy = {
+      rock: [new Array<number>(T + 1).fill(0), new Array<number>(T + 1).fill(0)],
+      capex: [new Array<number>(T + 1).fill(50), new Array<number>(T + 1).fill(0)],
+      rd: [new Array<number>(T + 1).fill(0), new Array<number>(T + 1).fill(0)],
+    }
+    const result = simulate(scenario, policy)
+    const status = evaluateConstraints(scenario, policy, result)
+
+    // Year 0 (2026): canRaiseDebt=false, cash=0, capex=50 → debt gate violated
+    expect(status.debtGate[0].satisfied).toBe(false)
+    expect(status.debtGate[0].slack).toBeLessThan(0)
+    expect(status.anyViolation).toBe(true)
+  })
+
+  it('is satisfied in all years when canRaiseDebt is always true', () => {
+    const scenario: Scenario = {
+      ...makeScenario(),
+      corporate: {
+        ...makeScenario().corporate,
+        canRaiseDebt: [true, true, true, true],
+      },
+    }
+    const policy: Policy = {
+      rock: [new Array<number>(T + 1).fill(400), new Array<number>(T + 1).fill(400)],
+      capex: [new Array<number>(T + 1).fill(100), new Array<number>(T + 1).fill(0)],
+      rd: [new Array<number>(T + 1).fill(0), new Array<number>(T + 1).fill(0)],
+    }
+    const result = simulate(scenario, policy)
+    const status = evaluateConstraints(scenario, policy, result)
+
+    expect(status.debtGate.every((s) => s.satisfied)).toBe(true)
+  })
+
+  it('is satisfied when canRaiseDebt is absent (defaults to all-true)', () => {
+    const scenario = makeScenario() // no canRaiseDebt field
+    const policy = buildEqualPolicy(scenario)
+    const result = simulate(scenario, policy)
+    const status = evaluateConstraints(scenario, policy, result)
+
+    expect(status.debtGate.every((s) => s.satisfied)).toBe(true)
+  })
+
+  it('is satisfied in debt-gate years when capex is zero', () => {
+    const scenario: Scenario = {
+      ...makeScenario(),
+      corporate: {
+        ...makeScenario().corporate,
+        canRaiseDebt: [false, false, true, true],
+      },
+    }
+    const policy: Policy = {
+      rock: [new Array<number>(T + 1).fill(400), new Array<number>(T + 1).fill(400)],
+      capex: [new Array<number>(T + 1).fill(0), new Array<number>(T + 1).fill(0)],
+      rd: [new Array<number>(T + 1).fill(0), new Array<number>(T + 1).fill(0)],
+    }
+    const result = simulate(scenario, policy)
+    const status = evaluateConstraints(scenario, policy, result)
+
+    expect(status.debtGate[0].satisfied).toBe(true)
+    expect(status.debtGate[1].satisfied).toBe(true)
+  })
+})
+
 describe('anyViolation flag', () => {
   it('is false when all constraints satisfied', () => {
     const scenario = makeScenario()

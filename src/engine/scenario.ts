@@ -140,6 +140,32 @@ function validateCorporate(
     errors,
   )
 
+  // canRaiseDebt is optional; parse it only when present and well-formed
+  let canRaiseDebt: boolean[] | undefined
+  if (c.canRaiseDebt !== undefined) {
+    if (!Array.isArray(c.canRaiseDebt)) {
+      errors.push({
+        field: 'corporate.canRaiseDebt',
+        reason: 'must be an array of booleans',
+        value: c.canRaiseDebt,
+      })
+    } else if ((c.canRaiseDebt as unknown[]).length !== horizonYears + 1) {
+      errors.push({
+        field: 'corporate.canRaiseDebt',
+        reason: `must have exactly ${horizonYears + 1} elements (got ${(c.canRaiseDebt as unknown[]).length})`,
+        value: `array of length ${(c.canRaiseDebt as unknown[]).length}`,
+      })
+    } else if (!(c.canRaiseDebt as unknown[]).every((v) => typeof v === 'boolean')) {
+      errors.push({
+        field: 'corporate.canRaiseDebt',
+        reason: 'every element must be a boolean',
+        value: c.canRaiseDebt,
+      })
+    } else {
+      canRaiseDebt = c.canRaiseDebt as boolean[]
+    }
+  }
+
   if (errors.some((e) => e.field.startsWith('corporate'))) return null
 
   return {
@@ -151,6 +177,7 @@ function validateCorporate(
     leverageMax: leverageMax!,
     terminalGrowth: terminalGrowth!,
     depreciation: depreciation!,
+    ...(canRaiseDebt !== undefined ? { canRaiseDebt } : {}),
   }
 }
 
