@@ -6,13 +6,15 @@
  */
 
 import { create } from 'zustand'
-import type { Scenario, Policy, SimResult } from '../engine/types'
+import type { Scenario, Policy, SimResult, ConstraintStatus } from '../engine/types'
 import { simulate, buildEqualPolicy } from '../engine/simulate'
+import { evaluateConstraints } from '../engine/constraints'
 
 interface SimStore {
   scenario: Scenario | null
   policy: Policy | null
   result: SimResult | null
+  constraints: ConstraintStatus | null
   isIllustrative: boolean
 
   setScenario: (scenario: Scenario, isIllustrative: boolean) => void
@@ -22,23 +24,30 @@ interface SimStore {
   updatePolicyRd: (lineIndex: number, year: number, value: number) => void
 }
 
+function runSim(scenario: Scenario, policy: Policy) {
+  const result = simulate(scenario, policy)
+  const constraints = evaluateConstraints(scenario, policy, result)
+  return { result, constraints }
+}
+
 export const useSimStore = create<SimStore>((set, get) => ({
   scenario: null,
   policy: null,
   result: null,
+  constraints: null,
   isIllustrative: true,
 
   setScenario: (scenario, isIllustrative) => {
     const policy = buildEqualPolicy(scenario)
-    const result = simulate(scenario, policy)
-    set({ scenario, policy, result, isIllustrative })
+    const { result, constraints } = runSim(scenario, policy)
+    set({ scenario, policy, result, constraints, isIllustrative })
   },
 
   setPolicy: (policy) => {
     const { scenario } = get()
     if (!scenario) return
-    const result = simulate(scenario, policy)
-    set({ policy, result })
+    const { result, constraints } = runSim(scenario, policy)
+    set({ policy, result, constraints })
   },
 
   updatePolicyRock: (lineIndex, year, value) => {
@@ -48,8 +57,8 @@ export const useSimStore = create<SimStore>((set, get) => ({
       i === lineIndex ? row.map((v, t) => (t === year ? value : v)) : [...row],
     )
     const newPolicy = { ...policy, rock: newRock }
-    const result = simulate(scenario, newPolicy)
-    set({ policy: newPolicy, result })
+    const { result, constraints } = runSim(scenario, newPolicy)
+    set({ policy: newPolicy, result, constraints })
   },
 
   updatePolicyCapex: (lineIndex, year, value) => {
@@ -59,8 +68,8 @@ export const useSimStore = create<SimStore>((set, get) => ({
       i === lineIndex ? row.map((v, t) => (t === year ? value : v)) : [...row],
     )
     const newPolicy = { ...policy, capex: newCapex }
-    const result = simulate(scenario, newPolicy)
-    set({ policy: newPolicy, result })
+    const { result, constraints } = runSim(scenario, newPolicy)
+    set({ policy: newPolicy, result, constraints })
   },
 
   updatePolicyRd: (lineIndex, year, value) => {
@@ -70,7 +79,7 @@ export const useSimStore = create<SimStore>((set, get) => ({
       i === lineIndex ? row.map((v, t) => (t === year ? value : v)) : [...row],
     )
     const newPolicy = { ...policy, rd: newRd }
-    const result = simulate(scenario, newPolicy)
-    set({ policy: newPolicy, result })
+    const { result, constraints } = runSim(scenario, newPolicy)
+    set({ policy: newPolicy, result, constraints })
   },
 }))

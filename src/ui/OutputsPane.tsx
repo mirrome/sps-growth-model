@@ -6,6 +6,8 @@
  */
 
 import { useSimStore } from '../store/useSimStore'
+import { AllCharts } from './Charts'
+import { ConstraintStrip } from './ConstraintStrip'
 
 interface KpiTileProps {
   label: string
@@ -51,8 +53,10 @@ function fmt(value: number, decimals = 0): string {
 export function OutputsPane() {
   const result = useSimStore((s) => s.result)
   const scenario = useSimStore((s) => s.scenario)
+  const policy = useSimStore((s) => s.policy)
+  const constraints = useSimStore((s) => s.constraints)
 
-  if (!result || !scenario) {
+  if (!result || !scenario || !policy || !constraints) {
     return (
       <main className="h-full overflow-y-auto bg-gray-50 flex items-center justify-center">
         <p className="text-sm text-gray-400">Loading simulation…</p>
@@ -180,6 +184,22 @@ export function OutputsPane() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Constraint Status Strip */}
+      <section className="mb-8">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Constraint Status
+        </h2>
+        <ConstraintStrip status={constraints} leverageMax={scenario.corporate.leverageMax} />
+      </section>
+
+      {/* All 8 Charts */}
+      <section>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Charts
+        </h2>
+        <AllCharts result={result} scenario={scenario} policy={policy} />
       </section>
     </main>
   )
