@@ -50,12 +50,14 @@ function MathSectionCard({ section }: { section: (typeof MATH_SECTIONS)[number] 
         {section.title}
       </h3>
       {section.equations.map((eq) => (
-        <div key={eq.id} className="mb-4">
-          <div className="bg-gray-50 border border-gray-100 rounded p-3 mb-2">
-            <KatexEq latex={eq.latex} block={true} />
-          </div>
-          <p className="text-xs text-gray-600 leading-relaxed">{eq.prose}</p>
+        <div key={eq.id} className="bg-gray-50 border border-gray-100 rounded p-3 mb-2">
+          <KatexEq latex={eq.latex} block={true} />
         </div>
+      ))}
+      {section.prose.split('\n\n').map((para, i) => (
+        <p key={i} className="text-xs text-gray-600 leading-relaxed mt-2">
+          {para}
+        </p>
       ))}
     </div>
   )
@@ -273,11 +275,10 @@ export function MathPane() {
               <MathSectionCard key={s.id} section={s} />
             ))}
 
-            {/* MIT review note */}
-            <div className="mt-6 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-              <strong>Review gate C:</strong> Prose above marked with [MIT team to supply prose…]
-              will be replaced with MIT-team-authored content before v1.0.0. All prose changes
-              require MIT team review. See AGENTS.md.
+            {/* Content ownership notice */}
+            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+              <strong>Content ownership:</strong> All prose in this pane is MIT-team-authored
+              (Math_Drawer_Prose_v1.md, Gate C). Any edits require MIT team review. See AGENTS.md.
             </div>
           </>
         )}

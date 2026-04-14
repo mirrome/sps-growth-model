@@ -90,7 +90,7 @@ function validateMeta(raw: unknown, errors: FieldError[]): Scenario['meta'] | nu
     name: typeof m.name === 'string' ? m.name : 'Unnamed',
     description: typeof m.description === 'string' ? m.description : undefined,
     horizonYears: 10,
-    isIllustrative: true,
+    isIllustrative: false,
   }
 
   if (
@@ -107,13 +107,8 @@ function validateMeta(raw: unknown, errors: FieldError[]): Scenario['meta'] | nu
     result.horizonYears = m.horizonYears
   }
 
-  if (typeof m.isIllustrative !== 'boolean') {
-    errors.push({
-      field: 'meta.isIllustrative',
-      reason: 'must be a boolean',
-      value: m.isIllustrative,
-    })
-  } else {
+  // isIllustrative is optional; default false so confidential files are never accidentally shown as illustrative
+  if (typeof m.isIllustrative === 'boolean') {
     result.isIllustrative = m.isIllustrative
   }
 
