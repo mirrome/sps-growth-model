@@ -44,26 +44,50 @@ export async function exportChartAsPng(
 ): Promise<void> {
   if (!containerRef) return
 
-  const svgEl = containerRef.querySelector('svg')
+  // Prefer the Recharts surface SVG; fall back to first SVG in the container.
+  const svgEl =
+    containerRef.querySelector<SVGSVGElement>('svg.recharts-surface') ??
+    containerRef.querySelector<SVGSVGElement>('svg')
   if (!svgEl) return
 
-  const svgData = new XMLSerializer().serializeToString(svgEl)
+  // getBoundingClientRect gives the actual rendered size.
+  // clientWidth/clientHeight returns 0 when the SVG uses width="100%".
+  const rect = svgEl.getBoundingClientRect()
+  const width = rect.width || svgEl.clientWidth
+  const height = rect.height || svgEl.clientHeight
+  if (width === 0 || height === 0) return
+
+  // Clone and stamp explicit pixel dimensions so the <img> loads at full size.
+  const clone = svgEl.cloneNode(true) as SVGSVGElement
+  clone.setAttribute('width', String(width))
+  clone.setAttribute('height', String(height))
+
+  // Ensure the SVG xmlns declaration is present (required by some browsers).
+  let svgData = new XMLSerializer().serializeToString(clone)
+  if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+  }
+
   const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(svgBlob)
 
   const img = new Image()
   img.onload = () => {
+    const scale = 2 // 2× for retina-quality output
     const canvas = document.createElement('canvas')
-    const scale = 2 // 2× for retina quality
-    canvas.width = svgEl.clientWidth * scale
-    canvas.height = svgEl.clientHeight * scale
+    canvas.width = width * scale
+    canvas.height = height * scale
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      URL.revokeObjectURL(url)
+      return
+    }
 
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.scale(scale, scale)
     ctx.drawImage(img, 0, 0)
+    URL.revokeObjectURL(url)
 
     canvas.toBlob((blob) => {
       if (!blob) return
@@ -73,7 +97,7 @@ export async function exportChartAsPng(
       a.click()
       URL.revokeObjectURL(a.href)
     }, 'image/png')
-    URL.revokeObjectURL(url)
   }
+  img.onerror = () => URL.revokeObjectURL(url)
   img.src = url
 }
