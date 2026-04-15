@@ -7,7 +7,7 @@
 
 import { create } from 'zustand'
 import type { Scenario, Policy, SimResult, ConstraintStatus } from '../engine/types'
-import { simulate, buildEqualPolicy } from '../engine/simulate'
+import { simulate, buildSteadyStatePolicy } from '../engine/simulate'
 import { evaluateConstraints } from '../engine/constraints'
 
 interface SimStore {
@@ -46,7 +46,7 @@ export const useSimStore = create<SimStore>((set, get) => ({
   referenceLabel: null,
 
   setScenario: (scenario, isIllustrative) => {
-    const policy = buildEqualPolicy(scenario)
+    const policy = buildSteadyStatePolicy(scenario)
     const { result, constraints } = runSim(scenario, policy)
     set({ scenario, policy, result, constraints, isIllustrative })
   },

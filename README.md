@@ -51,6 +51,30 @@ confidential — not for external distribution"**.
 
 ---
 
+## Understanding the default view
+
+When the tool first loads, every line is set to a **steady-state baseline**: rock is
+allocated at each line's initial run-rate (exactly enough to run at initial installed
+capacity), with zero new capex and zero R&D. This is the same baseline the PM
+reference spreadsheet uses, and the calibration test verifies it to 10 ppm against
+the spreadsheet.
+
+This view is intentional, not a recommended policy. It shows what happens if SPS
+does nothing — revenue erodes through price decay, opex grows, and free cash flow
+eventually turns negative. The strategic message is that investment is necessary to
+maintain value, not optional.
+
+**On the leverage constraint:** the initial debt-to-EBITDA ratio may exceed the
+2.5× ceiling in the first few years of the horizon. This reflects the starting
+capital structure (D₀ is fixed) and is not a model error. As FCF accumulates and
+debt is paid down, the leverage ratio improves and the constraint clears in later
+years. Any investment scenario that grows EBITDA will bring leverage into compliance
+faster. The constraint strip is working correctly; the early-year red flags are
+telling you the business is starting from a leveraged position, which is precisely
+the context leadership needs to see.
+
+---
+
 ## Development commands
 
 ```bash

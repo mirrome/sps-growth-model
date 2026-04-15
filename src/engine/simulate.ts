@@ -243,3 +243,33 @@ export function buildEqualPolicy(scenario: Scenario): Policy {
     rd: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
   }
 }
+
+/**
+ * Build the "steady-state" default policy used on first load.
+ *
+ * Rock is held at each line's initial run-rate (K_{i,0} / η_i) across all years —
+ * the same baseline the PM reference spreadsheet and calibration test use. This ensures
+ * every line produces at its initial capacity in year 0 and the rock supply constraint
+ * is satisfied from day one. Capex and R&D are zero, which is intentional: the default
+ * view shows what happens if SPS does not invest. That is a deliberate strategic
+ * signal (doing nothing destroys value), not a bug.
+ *
+ * Note on initial leverage: the initial debt-to-EBITDA ratio (D₀ / EBITDA₀) may
+ * exceed the leverage ceiling in the first few years purely because of the starting
+ * capital structure — no policy choice can change D₀. The leverage constraint
+ * transitions to green once debt is paid down sufficiently through accumulated FCF.
+ * See README.md §"Understanding the default view" for context.
+ */
+export function buildSteadyStatePolicy(scenario: Scenario): Policy {
+  const T = scenario.meta.horizonYears
+  const N = scenario.businessLines.length
+
+  return {
+    rock: scenario.businessLines.map((line) => {
+      const r = line.initialCapacity / line.yield
+      return new Array<number>(T + 1).fill(r)
+    }),
+    capex: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
+    rd: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
+  }
+}
