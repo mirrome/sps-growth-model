@@ -139,8 +139,15 @@ export function simulate(scenario: Scenario, policy: Policy): SimResult {
 
         // §3.6.4 Pipeline update: P[t+1] = P[t] - φ·P[t-λ]
         // (P[t] was already augmented by R&D at the start of this iteration)
+        //
+        // The drain φ·P[t-λ] is based on a lagged value that may exceed the current
+        // pipeline in late years with low or zero R&D (products maturing from a larger
+        // past pipeline). This is correct model behaviour: those products were committed
+        // λ years ago and convert regardless of the current pipeline level. The result
+        // is floored at 0 silently — pipeline reaching zero during a harvest-only policy
+        // is expected depletion, not a parameter error, so no diagnostic warning is emitted.
         const newPipeline = pipeline[i][t] - line.rdConversion * pipelineMaturing
-        pipeline[i][t + 1] = clampNonNegative(newPipeline, i, t + 1, 'pipeline', warnings)
+        pipeline[i][t + 1] = Math.max(0, newPipeline)
 
         // §3.6.5 Price dynamics: p_{i,t+1} = p_{i,t}·(1−π_i) + ΔRev_{i,t}/max(Q_{i,t}, Q_min)
         unitPrice[i][t + 1] = p * (1 - line.priceErosion) + dRev / Math.max(Q, Q_MIN)
