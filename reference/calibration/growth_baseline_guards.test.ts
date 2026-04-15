@@ -24,7 +24,7 @@ import { parseScenario } from '../../src/engine/scenario'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const scenarioPath = resolve(__dirname, '../../scenario.illustrative.json')
+const scenarioPath = resolve(__dirname, '../../public/scenario.illustrative.json')
 const illustrativeScenario = parseScenario(
   JSON.parse(readFileSync(scenarioPath, 'utf-8')) as unknown,
 )

@@ -34,7 +34,7 @@ import type { Policy } from '../../src/engine/types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURE_PATH = resolve(__dirname, 'growth_baseline_fixture.csv')
-const SCENARIO_PATH = resolve(__dirname, '../../scenario.illustrative.json')
+const SCENARIO_PATH = resolve(__dirname, '../../public/scenario.illustrative.json')
 
 // ---------------------------------------------------------------------------
 // CSV parser (same format as sps_reference_output.csv)

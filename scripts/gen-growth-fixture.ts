@@ -36,7 +36,7 @@ import { parseScenario } from '../src/engine/scenario.js'
 import { simulate, buildGrowthBaselinePolicy } from '../src/engine/simulate.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const SCENARIO_PATH = resolve(__dirname, '../scenario.illustrative.json')
+const SCENARIO_PATH = resolve(__dirname, '../public/scenario.illustrative.json')
 const OUT_PATH = resolve(__dirname, '../reference/calibration/growth_baseline_fixture.csv')
 
 const SHORT_CODES = ['USS', 'SPN', 'FIS', 'EMS', 'ANS', 'NPS']

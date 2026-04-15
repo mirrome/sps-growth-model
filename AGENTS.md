@@ -60,8 +60,9 @@ reference/
   sps_reference_model.xlsx  Independent Excel reference model built by PM
   calibration/
     calibration.test.ts     Cross-verification: TypeScript vs spreadsheet
-scenario.illustrative.json  Default scenario with illustrative placeholder values
-scenario.ocp_v1.json        Real OCP seed values (added in data tranches; confidential)
+public/
+  scenario.illustrative.json  Canonical illustrative scenario (served at the root URL in production)
+scenario.ocp_v1.json        Real OCP seed values (added in data tranches; confidential — local dev only, not in public/)
 AGENTS.md                   This file
 README.md                   Local setup and contribution guide
 docs/
