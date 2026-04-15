@@ -106,7 +106,7 @@ export default function App() {
             <span className="text-xs text-gray-400 font-normal">{scenario.meta.name}</span>
           )}
         </div>
-        <div className="text-xs text-gray-400">v1 · MIT Global Lab 2026</div>
+        <div className="text-xs text-gray-400">v1.1 · MIT Global Lab 2026</div>
       </header>
 
       {/* Scenario banner — always visible, never dismissable */}

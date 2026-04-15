@@ -9,7 +9,7 @@
  * 5. Scenario controls — save, load, export, import, reset
  */
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSimStore } from '../store/useSimStore'
 import type { Scenario, Policy } from '../engine/types'
 import { parseScenario } from '../engine/scenario'
@@ -55,31 +55,70 @@ interface SliderFieldProps {
   format: (v: number) => string
   onChange: (v: number) => void
   unit?: string
+  /**
+   * When true the field stores values as decimals (e.g. 0.27) but shows
+   * them multiplied by 100 so the user reads "27 %" instead of "0.27 %".
+   * Input is parsed back by dividing by 100 before calling onChange.
+   */
+  pct?: boolean
 }
 
-function SliderField({ label, value, min, max, step, format, onChange, unit }: SliderFieldProps) {
-  const [inputValue, setInputValue] = useState(String(value))
+function SliderField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  format,
+  onChange,
+  unit,
+  pct,
+}: SliderFieldProps) {
+  const scale = pct ? 100 : 1
+  const toDisplay = (raw: number) => +(raw * scale).toFixed(8)
+  const toRaw = (display: number) => display / scale
+
+  const [inputValue, setInputValue] = useState(String(toDisplay(value)))
   const [error, setError] = useState<string | null>(null)
 
-  const handleSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseFloat(e.target.value)
-    setInputValue(String(v))
+  // Sync display when value is changed externally (e.g. scenario reset).
+  // useEffect with setState is intentional here: value is an external prop and
+  // we need to mirror it into local inputValue state when it changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setInputValue(String(toDisplay(value)))
     setError(null)
-    onChange(v)
+  }, [value])
+
+  const handleSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = parseFloat(e.target.value)
+    setInputValue(String(toDisplay(raw)))
+    setError(null)
+    onChange(raw)
   }
 
   const handleText = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
-    const v = parseFloat(e.target.value)
-    if (isNaN(v)) {
+    const display = parseFloat(e.target.value)
+    if (isNaN(display)) {
       setError('Must be a number')
-    } else if (v < min || v > max) {
+      return
+    }
+    const raw = toRaw(display)
+    if (raw < min || raw > max) {
       setError(`Must be between ${format(min)} and ${format(max)}`)
     } else {
       setError(null)
-      onChange(v)
+      onChange(raw)
     }
   }
+
+  const displayMin = toDisplay(min)
+  const displayMax = toDisplay(max)
+  const displayStep = +(step * scale).toFixed(8)
+  const rawFromInput = isNaN(parseFloat(inputValue))
+    ? min
+    : Math.min(Math.max(toRaw(parseFloat(inputValue)), min), max)
 
   return (
     <div className="mb-3">
@@ -90,9 +129,9 @@ function SliderField({ label, value, min, max, step, format, onChange, unit }: S
             type="number"
             value={inputValue}
             onChange={handleText}
-            step={step}
-            min={min}
-            max={max}
+            step={displayStep}
+            min={displayMin}
+            max={displayMax}
             className={`w-20 text-right text-xs border rounded px-1 py-0.5 ${
               error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-blue-400'
             } focus:outline-none`}
@@ -105,9 +144,7 @@ function SliderField({ label, value, min, max, step, format, onChange, unit }: S
         min={min}
         max={max}
         step={step}
-        value={
-          isNaN(parseFloat(inputValue)) ? min : Math.min(Math.max(parseFloat(inputValue), min), max)
-        }
+        value={rawFromInput}
         onChange={handleSlider}
         className="w-full h-1 rounded appearance-none bg-gray-200 accent-blue-500"
       />
@@ -145,6 +182,7 @@ function CorporateSection() {
       <SliderField
         label="Tax rate (T_c)"
         value={corp.taxRate}
+        pct
         min={0}
         max={0.5}
         step={0.01}
@@ -155,6 +193,7 @@ function CorporateSection() {
       <SliderField
         label="Cost of debt (r_D)"
         value={corp.rD}
+        pct
         min={0.01}
         max={0.15}
         step={0.001}
@@ -165,6 +204,7 @@ function CorporateSection() {
       <SliderField
         label="Cost of equity (r_E)"
         value={corp.rE}
+        pct
         min={0.05}
         max={0.25}
         step={0.001}
@@ -185,6 +225,7 @@ function CorporateSection() {
       <SliderField
         label="Terminal growth (g_T)"
         value={corp.terminalGrowth}
+        pct
         min={0}
         max={0.06}
         step={0.001}
@@ -352,6 +393,7 @@ function BusinessLineSection() {
       <SliderField
         label="Price erosion (π, %/yr)"
         value={line.priceErosion}
+        pct
         min={0}
         max={0.1}
         step={0.001}
@@ -409,6 +451,7 @@ function BusinessLineSection() {
       <SliderField
         label="R&D conversion rate (φ, %/yr)"
         value={line.rdConversion}
+        pct
         min={0}
         max={0.5}
         step={0.01}
