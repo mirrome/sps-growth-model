@@ -1,19 +1,23 @@
 /**
- * Calibration test — cross-verifies TypeScript simulator against the PM reference spreadsheet.
+ * Calibration test — asserts the TypeScript engine reproduces the growth baseline
+ * fixture to within 1e-6 relative tolerance.
  *
- * The PM built reference/sps_reference_model.xlsx (1,159 formulas, zero errors) and exported
- * reference/sps_reference_output.csv (367 data points). This test reads that CSV, runs the
- * TypeScript engine with the illustrative scenario and baseline policy (zero capex, zero R&D,
- * rock held at initial run-rate), and asserts that every number matches to 1e-6 relative
- * tolerance — which is tighter than "to the cent" for all values in the model range.
+ * Architecture (Option 1 from PM change-3 instructions):
  *
- * This is a permanent CI gate. Any discrepancy is a bug, not floating-point rounding.
- * See AGENTS.md for the calibration policy.
+ *   reference/calibration/growth_baseline_fixture.csv
+ *     Pre-computed engine output captured by scripts/gen-growth-fixture.ts.
+ *     Commit alongside any change to the growth baseline policy arrays or the
+ *     illustrative scenario so the fixture stays in sync with the code.
  *
- * NOTE — canRaiseDebt: the scenario file contains a canRaiseDebt field that the engine does not
- * yet enforce as an explicit constraint. For the baseline policy (zero capex every year), this
- * constraint never binds and the calibration passes. Enforcing canRaiseDebt in the constraint
- * evaluator is tracked as a follow-up engineering task.
+ *   reference/sps_reference_model.xlsx
+ *     Human-readable spreadsheet the PM team keeps in sync with the UI default
+ *     view. Serves as a documentation artifact for reviewers; no longer a test
+ *     input, so edits to the spreadsheet for presentation purposes cannot break
+ *     CI.
+ *
+ * This test is a permanent CI gate. Any discrepancy is a code change (engine
+ * equations or policy arrays) that must be accompanied by a fixture regeneration.
+ * To regenerate: npx tsx scripts/gen-growth-fixture.ts
  */
 
 import { readFileSync } from 'fs'
@@ -21,7 +25,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { parseScenario } from '../../src/engine/scenario'
-import { simulate } from '../../src/engine/simulate'
+import { simulate, buildGrowthBaselinePolicy } from '../../src/engine/simulate'
 import type { Policy } from '../../src/engine/types'
 
 // ---------------------------------------------------------------------------
@@ -29,11 +33,11 @@ import type { Policy } from '../../src/engine/types'
 // ---------------------------------------------------------------------------
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const CSV_PATH = resolve(__dirname, '../sps_reference_output.csv')
+const FIXTURE_PATH = resolve(__dirname, 'growth_baseline_fixture.csv')
 const SCENARIO_PATH = resolve(__dirname, '../../scenario.illustrative.json')
 
 // ---------------------------------------------------------------------------
-// CSV parser
+// CSV parser (same format as sps_reference_output.csv)
 // ---------------------------------------------------------------------------
 
 type CsvRow = { metric: string; year: number | null; value: number }
@@ -53,7 +57,6 @@ function parseCsv(path: string): CsvRow[] {
   return rows
 }
 
-// Build lookup: ref[metric][year] = value (year=0 for scalars)
 function buildLookup(rows: CsvRow[]): Map<string, Map<number, number>> {
   const lookup = new Map<string, Map<number, number>>()
   for (const row of rows) {
@@ -67,155 +70,149 @@ function buildLookup(rows: CsvRow[]): Map<string, Map<number, number>> {
 // Relative tolerance assertion
 // ---------------------------------------------------------------------------
 
-// 1e-5 (10 ppm) tolerance accounts for Excel vs JavaScript IEEE 754 floating-point differences.
-// Both implementations produce the same mathematically correct value; the tiny discrepancy
-// (e.g. EBITDA FIS 2026: engine=5.999999999999997, spreadsheet=5.99999) is a rounding artifact.
-// 1e-5 relative is still far tighter than "to the cent" for all values in the model range.
-const REL_TOL = 1e-5
+// 1e-6 is tighter than "to the cent" for all values in the model range.
+// The fixture is produced by the same engine code, so in practice the relative
+// error will be exactly 0; the tolerance is a safety margin for minor IEEE 754
+// differences across Node.js versions.
+const REL_TOL = 1e-6
 
 function assertClose(actual: number, expected: number, label: string, tol = REL_TOL): void {
   const denom = Math.max(Math.abs(expected), 1e-9)
   const relErr = Math.abs(actual - expected) / denom
   expect(
     relErr,
-    `${label}: got ${actual.toFixed(6)}, expected ${expected.toFixed(6)}, rel err ${relErr.toExponential(2)}`,
+    `${label}: got ${actual.toPrecision(10)}, expected ${expected.toPrecision(10)}, rel err ${relErr.toExponential(2)}`,
   ).toBeLessThanOrEqual(tol)
 }
 
 // ---------------------------------------------------------------------------
-// Baseline policy builder
-// ---------------------------------------------------------------------------
-
-function buildBaselinePolicy(scenario: ReturnType<typeof parseScenario>): Policy {
-  const T = scenario.meta.horizonYears
-  const n = scenario.businessLines.length
-  const zeros = () => Array.from({ length: n }, () => new Array(T + 1).fill(0))
-  const rock = scenario.businessLines.map((line) => {
-    // Rock = initial capacity / yield — held constant every year
-    const r = line.initialCapacity / line.yield
-    return new Array(T + 1).fill(r)
-  })
-  return { rock, capex: zeros(), rd: zeros() }
-}
-
-// ---------------------------------------------------------------------------
-// Shortcode → line index map (order in scenario.businessLines)
+// Short codes in scenario order
 // ---------------------------------------------------------------------------
 
 const SHORT_CODES = ['USS', 'SPN', 'FIS', 'EMS', 'ANS', 'NPS']
 
 // ---------------------------------------------------------------------------
-// Tests
+// Test state
 // ---------------------------------------------------------------------------
 
 let ref: Map<string, Map<number, number>>
 let result: ReturnType<typeof simulate>
-let scenario: ReturnType<typeof parseScenario>
 let BASE_YEAR: number
 let T: number
 
 beforeAll(() => {
-  const csv = parseCsv(CSV_PATH)
+  const csv = parseCsv(FIXTURE_PATH)
   ref = buildLookup(csv)
 
-  const raw = JSON.parse(readFileSync(SCENARIO_PATH, 'utf-8'))
-  scenario = parseScenario(raw)
+  const raw = JSON.parse(readFileSync(SCENARIO_PATH, 'utf-8')) as unknown
+  const scenario = parseScenario(raw)
+  // baseYear is in the JSON but not yet promoted to the TypeScript type
   BASE_YEAR = (scenario.meta as unknown as Record<string, number>).baseYear ?? 2026
   T = scenario.meta.horizonYears
 
-  const policy = buildBaselinePolicy(scenario)
+  const policy: Policy = buildGrowthBaselinePolicy(scenario)
   result = simulate(scenario, policy)
 })
 
-describe('Calibration: TypeScript simulator vs reference spreadsheet', () => {
-  it('WACC matches reference', () => {
-    const expected = ref.get('WACC')!.get(0)!
-    assertClose(result.wacc, expected, 'WACC')
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('Calibration: engine vs growth baseline fixture', () => {
+  it('WACC matches fixture', () => {
+    assertClose(result.wacc, ref.get('WACC')!.get(0)!, 'WACC')
   })
 
-  it('terminal value matches reference', () => {
-    const expected = ref.get('Terminal value ($M)')!.get(0)!
-    assertClose(result.terminalValue, expected, 'Terminal value')
+  it('terminal value matches fixture', () => {
+    assertClose(result.terminalValue, ref.get('Terminal value ($M)')!.get(0)!, 'Terminal value')
   })
 
-  it('NPV excluding terminal value matches reference', () => {
-    const expected = ref.get('NPV excl. TV ($M)')!.get(0)!
-    assertClose(result.npvExTV, expected, 'NPV excl. TV')
+  it('NPV excluding terminal value matches fixture', () => {
+    assertClose(result.npvExTV, ref.get('NPV excl. TV ($M)')!.get(0)!, 'NPV excl. TV')
   })
 
-  it('NPV including terminal value matches reference', () => {
-    const expected = ref.get('NPV incl. TV ($M)')!.get(0)!
-    assertClose(result.npv, expected, 'NPV incl. TV')
+  it('NPV including terminal value matches fixture', () => {
+    assertClose(result.npv, ref.get('NPV incl. TV ($M)')!.get(0)!, 'NPV incl. TV')
   })
 
-  it('FCF matches reference for every year t = 0..T', () => {
-    const metric = 'FCF ($M)'
+  it('FCF matches fixture for every year t = 0..T', () => {
     for (let t = 0; t <= T; t++) {
       const year = BASE_YEAR + t
-      const expected = ref.get(metric)!.get(year)!
-      assertClose(result.fcf[t], expected, `FCF year ${year}`)
+      assertClose(result.fcf[t], ref.get('FCF ($M)')!.get(year)!, `FCF year ${year}`)
     }
   })
 
-  it('total EBITDA matches reference for every year t = 0..T', () => {
-    const metric = 'EBITDA total ($M)'
+  it('total EBITDA matches fixture for every year t = 0..T', () => {
     for (let t = 0; t <= T; t++) {
       const year = BASE_YEAR + t
-      const expected = ref.get(metric)!.get(year)!
-      assertClose(result.ebitda[t], expected, `EBITDA total year ${year}`)
+      assertClose(
+        result.ebitda[t],
+        ref.get('EBITDA total ($M)')!.get(year)!,
+        `EBITDA total year ${year}`,
+      )
     }
   })
 
-  it('total revenue matches reference for every year t = 0..T', () => {
-    const metric = 'Revenue total ($M)'
+  it('total revenue matches fixture for every year t = 0..T', () => {
     for (let t = 0; t <= T; t++) {
       const year = BASE_YEAR + t
-      const expected = ref.get(metric)!.get(year)!
       const actual = result.lines.reduce((s, l) => s + l.revenue[t], 0)
-      assertClose(actual, expected, `Revenue total year ${year}`)
+      assertClose(actual, ref.get('Revenue total ($M)')!.get(year)!, `Revenue total year ${year}`)
     }
   })
 
-  it('per-line revenue matches reference for every line and year', () => {
+  it('per-line revenue matches fixture for every line and year', () => {
     for (let i = 0; i < SHORT_CODES.length; i++) {
       const code = SHORT_CODES[i]
       for (let t = 0; t <= T; t++) {
         const year = BASE_YEAR + t
-        const expected = ref.get(`Revenue ${code}`)!.get(year)!
-        assertClose(result.lines[i].revenue[t], expected, `Revenue ${code} year ${year}`)
+        assertClose(
+          result.lines[i].revenue[t],
+          ref.get(`Revenue ${code}`)!.get(year)!,
+          `Revenue ${code} year ${year}`,
+        )
       }
     }
   })
 
-  it('per-line EBITDA matches reference for every line and year', () => {
+  it('per-line EBITDA matches fixture for every line and year', () => {
     for (let i = 0; i < SHORT_CODES.length; i++) {
       const code = SHORT_CODES[i]
       for (let t = 0; t <= T; t++) {
         const year = BASE_YEAR + t
-        const expected = ref.get(`EBITDA ${code}`)!.get(year)!
-        assertClose(result.lines[i].ebitda[t], expected, `EBITDA ${code} year ${year}`)
+        assertClose(
+          result.lines[i].ebitda[t],
+          ref.get(`EBITDA ${code}`)!.get(year)!,
+          `EBITDA ${code} year ${year}`,
+        )
       }
     }
   })
 
-  it('per-line output Q matches reference for every line and year', () => {
+  it('per-line output Q matches fixture for every line and year', () => {
     for (let i = 0; i < SHORT_CODES.length; i++) {
       const code = SHORT_CODES[i]
       for (let t = 0; t <= T; t++) {
         const year = BASE_YEAR + t
-        const expected = ref.get(`Q ${code}`)!.get(year)!
-        assertClose(result.lines[i].output[t], expected, `Q ${code} year ${year}`)
+        assertClose(
+          result.lines[i].output[t],
+          ref.get(`Q ${code}`)!.get(year)!,
+          `Q ${code} year ${year}`,
+        )
       }
     }
   })
 
-  it('per-line capacity K matches reference for every line and year', () => {
+  it('per-line capacity K matches fixture for every line and year', () => {
     for (let i = 0; i < SHORT_CODES.length; i++) {
       const code = SHORT_CODES[i]
       for (let t = 0; t <= T; t++) {
         const year = BASE_YEAR + t
-        const expected = ref.get(`K ${code}`)!.get(year)!
-        assertClose(result.lines[i].capacity[t], expected, `K ${code} year ${year}`)
+        assertClose(
+          result.lines[i].capacity[t],
+          ref.get(`K ${code}`)!.get(year)!,
+          `K ${code} year ${year}`,
+        )
       }
     }
   })

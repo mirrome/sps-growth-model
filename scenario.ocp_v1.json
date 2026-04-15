@@ -18,7 +18,7 @@
     "depreciation": [65, 72, 80, 90, 102, 116, 132, 150, 170, 192, 216],
     "canRaiseDebt": [false, false, true, true, true, true, true, true, true, true, true]
   },
-  "rockSupply": [1300, 1650, 2100, 2650, 3300, 3850, 4350, 4750, 5050, 5250, 5400],
+  "rockSupply": [1400, 1650, 1900, 2150, 2400, 2600, 2800, 3050, 3300, 3500, 3600],
   "businessLines": [
     {
       "name": "Upstream Specialty Solutions and LFP",

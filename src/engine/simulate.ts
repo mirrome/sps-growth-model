@@ -301,31 +301,29 @@ export function buildGrowthBaselinePolicy(scenario: Scenario): Policy {
   }
 
   // Capex by line by year ($M). Total capex respects the debt-raising gate:
-  //  - Years 0-1 (2026-2027): ~$140M/year, sized to stay under pre-capex OCF
+  //  - Years 0-1 (2026-2027): ~$115M/year, sized to fit under pre-capex OCF of ~$120M
+  //    alongside the modest day-one R&D below (total OCF headroom ~$4.6M)
   //  - Years 2-5: ramp to peak ~$290M/year as debt becomes available
   //  - Years 6-10: taper as growth lines mature
-  // Per-line share weighted toward ANS and SPN (cheapest capacity per OCP
-  // notes), USS (PPA target), EMS and NPS (strategic optionality).
   const capex: Record<string, number[]> = {
-    USS: [30, 30, 50, 55, 65, 60, 55, 45, 35, 30, 25],
-    SPN: [20, 20, 35, 40, 45, 40, 40, 30, 25, 20, 15],
-    FIS: [15, 15, 25, 30, 35, 35, 30, 25, 20, 15, 12],
-    EMS: [20, 20, 30, 35, 40, 35, 30, 25, 20, 18, 14],
-    ANS: [35, 35, 55, 65, 75, 70, 60, 55, 45, 35, 30],
-    NPS: [20, 20, 25, 35, 35, 40, 35, 30, 25, 20, 14],
+    USS: [25, 25, 50, 55, 65, 60, 55, 45, 35, 30, 25],
+    SPN: [16, 16, 35, 40, 45, 40, 40, 30, 25, 20, 15],
+    FIS: [12, 12, 25, 30, 35, 35, 30, 25, 20, 15, 12],
+    EMS: [16, 16, 30, 35, 40, 35, 30, 25, 20, 18, 14],
+    ANS: [29, 29, 55, 65, 75, 70, 60, 55, 45, 35, 30],
+    NPS: [17, 17, 25, 35, 35, 40, 35, 30, 25, 20, 14],
   }
 
-  // R&D by line by year ($M). Zero in years 0-1 (2026-2027) while the debt-raising
-  // gate is closed and capex consumes available OCF; ramps from year 2 (2028) once
-  // debt becomes available. The initial pipeline in each line continues to mature
-  // regardless, so the revenue cost of the two-year deferral is modest.
+  // R&D by line by year ($M). Modest day-one level in years 0-1 (2026-2027)
+  // to sustain pipeline continuity while the debt gate is closed; full rate
+  // from year 2 (2028). Concentrated in Build and Exploratory phase lines.
   const rd: Record<string, number[]> = {
-    USS: [0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-    SPN: [0, 0, 12, 12, 12, 12, 12, 12, 12, 12, 12],
-    FIS: [0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    EMS: [0, 0, 18, 18, 18, 18, 18, 18, 18, 18, 18],
-    ANS: [0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5],
-    NPS: [0, 0, 15, 15, 15, 15, 15, 15, 15, 15, 15],
+    USS: [3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    SPN: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+    FIS: [2, 2, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    EMS: [8, 8, 18, 18, 18, 18, 18, 18, 18, 18, 18],
+    ANS: [3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    NPS: [7, 7, 15, 15, 15, 15, 15, 15, 15, 15, 15],
   }
 
   return {
