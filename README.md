@@ -53,25 +53,25 @@ confidential — not for external distribution"**.
 
 ## Understanding the default view
 
-When the tool first loads, every line is set to a **steady-state baseline**: rock is
-allocated at each line's initial run-rate (exactly enough to run at initial installed
-capacity), with zero new capex and zero R&D. This is the same baseline the PM
-reference spreadsheet uses, and the calibration test verifies it to 10 ppm against
-the spreadsheet.
+When the tool first loads, every line is set to a **growth baseline policy** that
+reflects the strategic direction communicated by OCP. Rock allocation ramps to cover
+the growing upstream supply, capex builds new capacity in each line while respecting
+the debt-raising restriction in 2026 and 2027, and research spending sustains a
+product development pipeline across all six lines. The purpose of this default is to
+show a plausible path to roughly doubling to tripling revenue over the horizon, as a
+starting point users can modify.
 
-This view is intentional, not a recommended policy. It shows what happens if SPS
-does nothing — revenue erodes through price decay, opex grows, and free cash flow
-eventually turns negative. The strategic message is that investment is necessary to
-maintain value, not optional.
+The calibration test continues to run against the original steady-state policy
+(`buildCalibrationPolicy`, formerly `buildSteadyStatePolicy`), which is the policy
+implemented in the PM reference spreadsheet. That test verifies engine correctness
+and is independent of the default policy shown in the UI.
 
-**On the leverage constraint:** the initial debt-to-EBITDA ratio may exceed the
-2.5× ceiling in the first few years of the horizon. This reflects the starting
-capital structure (D₀ is fixed) and is not a model error. As FCF accumulates and
-debt is paid down, the leverage ratio improves and the constraint clears in later
-years. Any investment scenario that grows EBITDA will bring leverage into compliance
-faster. The constraint strip is working correctly; the early-year red flags are
-telling you the business is starting from a leveraged position, which is precisely
-the context leadership needs to see.
+**On the leverage constraint:** the starting debt-to-EBITDA ratio exceeds the 2.5×
+ceiling in the first few years because the starting balance sheet carries debt that
+is high relative to current EBITDA. The growth baseline brings leverage into
+compliance by roughly year five as EBITDA expands. This is the core strategic point
+of the model: growth investment is how the firm earns its way back inside its
+leverage policy, not a luxury to defer.
 
 ---
 

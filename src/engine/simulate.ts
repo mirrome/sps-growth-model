@@ -245,22 +245,18 @@ export function buildEqualPolicy(scenario: Scenario): Policy {
 }
 
 /**
- * Build the "steady-state" default policy used on first load.
+ * Build the calibration baseline policy — rock at each line's initial run-rate,
+ * zero capex, zero R&D.
  *
- * Rock is held at each line's initial run-rate (K_{i,0} / η_i) across all years —
- * the same baseline the PM reference spreadsheet and calibration test use. This ensures
- * every line produces at its initial capacity in year 0 and the rock supply constraint
- * is satisfied from day one. Capex and R&D are zero, which is intentional: the default
- * view shows what happens if SPS does not invest. That is a deliberate strategic
- * signal (doing nothing destroys value), not a bug.
+ * This is the exact policy the PM reference spreadsheet implements, and the
+ * calibration test (reference/calibration/calibration.test.ts) runs against it.
+ * It is NOT the default UI policy; that role belongs to buildGrowthBaselinePolicy.
+ * Keeping this function ensures the calibration test remains independent of any
+ * future changes to the default UI policy.
  *
- * Note on initial leverage: the initial debt-to-EBITDA ratio (D₀ / EBITDA₀) may
- * exceed the leverage ceiling in the first few years purely because of the starting
- * capital structure — no policy choice can change D₀. The leverage constraint
- * transitions to green once debt is paid down sufficiently through accumulated FCF.
- * See README.md §"Understanding the default view" for context.
+ * Formerly named buildSteadyStatePolicy.
  */
-export function buildSteadyStatePolicy(scenario: Scenario): Policy {
+export function buildCalibrationPolicy(scenario: Scenario): Policy {
   const T = scenario.meta.horizonYears
   const N = scenario.businessLines.length
 
@@ -271,5 +267,82 @@ export function buildSteadyStatePolicy(scenario: Scenario): Policy {
     }),
     capex: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
     rd: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
+  }
+}
+
+/**
+ * Build the growth baseline policy shown when the tool first loads.
+ *
+ * Rock ramps toward OCP strategic targets, capex builds capacity while
+ * respecting the debt-raising gate in years 0-1, and R&D sustains the
+ * product development pipeline across all six lines.
+ *
+ * Arrays are hardcoded for the six-line illustrative and OCP v1 scenarios
+ * (both share the same six lines in the same order with the same short codes).
+ * Lines are looked up by shortCode; if a scenario introduces a new line code
+ * this function throws, which is the correct behaviour — update the arrays
+ * and bump the schema version rather than silently applying zeros.
+ */
+export function buildGrowthBaselinePolicy(scenario: Scenario): Policy {
+  // Rock allocation by line by year (kt/yr). Ramps from current run-rate
+  // toward growth targets grounded in OCP strategy notes:
+  //  - USS toward the 1Mt PPA target
+  //  - SPN from 100kt to ~500kt (OCP-stated 400kt by 2030 plus headroom)
+  //  - FIS to ~200kt (OCP three-phase build-out)
+  //  - ANS scaling 4% to ~10% market share path
+  //  - EMS and NPS held as strategic optionality with modest growth
+  const rock: Record<string, number[]> = {
+    USS: [522, 600, 680, 760, 840, 910, 980, 1060, 1140, 1220, 1300],
+    SPN: [141, 200, 260, 320, 380, 420, 460, 500, 530, 550, 565],
+    FIS: [53, 75, 100, 125, 150, 170, 190, 210, 225, 245, 265],
+    EMS: [20, 25, 30, 35, 40, 45, 50, 55, 55, 60, 60],
+    ANS: [389, 440, 490, 545, 600, 660, 720, 780, 840, 905, 970],
+    NPS: [24, 27, 30, 33, 36, 39, 42, 45, 46, 47, 48],
+  }
+
+  // Capex by line by year ($M). Total capex respects the debt-raising gate:
+  //  - Years 0-1 (2026-2027): ~$140M/year, sized to stay under pre-capex OCF
+  //  - Years 2-5: ramp to peak ~$290M/year as debt becomes available
+  //  - Years 6-10: taper as growth lines mature
+  // Per-line share weighted toward ANS and SPN (cheapest capacity per OCP
+  // notes), USS (PPA target), EMS and NPS (strategic optionality).
+  const capex: Record<string, number[]> = {
+    USS: [30, 30, 50, 55, 65, 60, 55, 45, 35, 30, 25],
+    SPN: [20, 20, 35, 40, 45, 40, 40, 30, 25, 20, 15],
+    FIS: [15, 15, 25, 30, 35, 35, 30, 25, 20, 15, 12],
+    EMS: [20, 20, 30, 35, 40, 35, 30, 25, 20, 18, 14],
+    ANS: [35, 35, 55, 65, 75, 70, 60, 55, 45, 35, 30],
+    NPS: [20, 20, 25, 35, 35, 40, 35, 30, 25, 20, 14],
+  }
+
+  // R&D by line by year ($M). Zero in years 0-1 (2026-2027) while the debt-raising
+  // gate is closed and capex consumes available OCF; ramps from year 2 (2028) once
+  // debt becomes available. The initial pipeline in each line continues to mature
+  // regardless, so the revenue cost of the two-year deferral is modest.
+  const rd: Record<string, number[]> = {
+    USS: [0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    SPN: [0, 0, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+    FIS: [0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+    EMS: [0, 0, 18, 18, 18, 18, 18, 18, 18, 18, 18],
+    ANS: [0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    NPS: [0, 0, 15, 15, 15, 15, 15, 15, 15, 15, 15],
+  }
+
+  return {
+    rock: scenario.businessLines.map((l) => {
+      const arr = rock[l.shortCode]
+      if (!arr) throw new Error(`buildGrowthBaselinePolicy: unknown shortCode "${l.shortCode}"`)
+      return arr
+    }),
+    capex: scenario.businessLines.map((l) => {
+      const arr = capex[l.shortCode]
+      if (!arr) throw new Error(`buildGrowthBaselinePolicy: unknown shortCode "${l.shortCode}"`)
+      return arr
+    }),
+    rd: scenario.businessLines.map((l) => {
+      const arr = rd[l.shortCode]
+      if (!arr) throw new Error(`buildGrowthBaselinePolicy: unknown shortCode "${l.shortCode}"`)
+      return arr
+    }),
   }
 }
