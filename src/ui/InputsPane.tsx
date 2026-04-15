@@ -9,7 +9,7 @@
  * 5. Scenario controls — save, load, export, import, reset
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, type ReactNode } from 'react'
 import { useSimStore } from '../store/useSimStore'
 import type { Scenario, Policy } from '../engine/types'
 import { parseScenario } from '../engine/scenario'
@@ -47,7 +47,7 @@ function AccordionSection({
 // ---------------------------------------------------------------------------
 
 interface SliderFieldProps {
-  label: string
+  label: ReactNode
   value: number
   min: number
   max: number
@@ -81,14 +81,15 @@ function SliderField({
   const [inputValue, setInputValue] = useState(String(toDisplay(value)))
   const [error, setError] = useState<string | null>(null)
 
-  // Sync display when value is changed externally (e.g. scenario reset).
-  // useEffect with setState is intentional here: value is an external prop and
-  // we need to mirror it into local inputValue state when it changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
+  // Derived-state pattern: sync inputValue when the external value prop changes
+  // (e.g. scenario reset / load). Updating state during render is the React-
+  // idiomatic alternative to useEffect+setState for prop→state mirroring.
+  const [trackedValue, setTrackedValue] = useState(value)
+  if (trackedValue !== value) {
+    setTrackedValue(value)
     setInputValue(String(toDisplay(value)))
     setError(null)
-  }, [value])
+  }
 
   const handleSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = parseFloat(e.target.value)
@@ -180,7 +181,11 @@ function CorporateSection() {
   return (
     <div className="space-y-0 pt-2">
       <SliderField
-        label="Tax rate (T_c)"
+        label={
+          <>
+            Tax rate (T<sub>c</sub>)
+          </>
+        }
         value={corp.taxRate}
         pct
         min={0}
@@ -191,7 +196,11 @@ function CorporateSection() {
         onChange={(v) => update({ taxRate: v })}
       />
       <SliderField
-        label="Cost of debt (r_D)"
+        label={
+          <>
+            Cost of debt (r<sub>D</sub>)
+          </>
+        }
         value={corp.rD}
         pct
         min={0.01}
@@ -202,7 +211,11 @@ function CorporateSection() {
         onChange={(v) => update({ rD: v })}
       />
       <SliderField
-        label="Cost of equity (r_E)"
+        label={
+          <>
+            Cost of equity (r<sub>E</sub>)
+          </>
+        }
         value={corp.rE}
         pct
         min={0.05}
@@ -213,7 +226,11 @@ function CorporateSection() {
         onChange={(v) => update({ rE: v })}
       />
       <SliderField
-        label="Leverage ceiling (L_max)"
+        label={
+          <>
+            Leverage ceiling (L<sub>max</sub>)
+          </>
+        }
         value={corp.leverageMax}
         min={0.5}
         max={6}
@@ -223,7 +240,11 @@ function CorporateSection() {
         onChange={(v) => update({ leverageMax: v })}
       />
       <SliderField
-        label="Terminal growth (g_T)"
+        label={
+          <>
+            Terminal growth (g<sub>T</sub>)
+          </>
+        }
         value={corp.terminalGrowth}
         pct
         min={0}
