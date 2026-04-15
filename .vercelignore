@@ -1,0 +1,13 @@
+# scenario.ocp_v1.json is NOT in public/ so it is never served from mit15.com.
+# It lives at the project root for local development only (Vite dev server picks
+# it up there). Team members who need the OCP scenario run the tool locally or
+# use the in-app "Import JSON" file picker with their local copy.
+#
+# The illustrative scenario is in public/scenario.illustrative.json (symlink)
+# and IS served publicly — that is the default view at mit15.com.
+
+# Reference materials — large files not needed at runtime
+reference/sps_reference_model.xlsx
+
+# Development/generation scripts — not needed on the host
+scripts/
