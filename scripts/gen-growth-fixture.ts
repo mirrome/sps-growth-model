@@ -12,6 +12,21 @@
  * The script is deterministic: same inputs → same CSV. The tolerance in the
  * test is 1e-6 to accommodate minor IEEE 754 differences across JS runtimes,
  * not floating-point non-determinism (which does not apply here).
+ *
+ * ─── TWO-ARTIFACT REGENERATION CHECKLIST ────────────────────────────────────
+ * This fixture and reference/sps_reference_output.csv must always be committed
+ * together. They are produced by independent code paths (TypeScript engine vs.
+ * Excel formulas) and must agree to 1e-6 or calibration.spreadsheet-consistency
+ * .test.ts will fail. Before committing a new fixture:
+ *
+ *   1. Run this script:
+ *        npx tsx scripts/gen-growth-fixture.ts
+ *   2. Ask the PM to rerun their Python build script and provide an updated
+ *        reference/sps_reference_output.csv
+ *   3. Commit BOTH CSVs in the same commit.
+ *
+ * A policy change that updates only one artifact will be caught by CI.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { readFileSync, writeFileSync } from 'fs'
