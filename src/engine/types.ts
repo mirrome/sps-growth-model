@@ -88,7 +88,13 @@ export interface Scenario {
   meta: {
     name: string
     description?: string
+    /** Planning horizon length in years. */
     horizonYears: number
+    /**
+     * Calendar year that corresponds to simulation index t = 0.
+     * Defaults to 2026 when absent from the scenario file (backward compatibility).
+     */
+    baseYear: number
     isIllustrative: boolean
   }
   corporate: CorporateParams

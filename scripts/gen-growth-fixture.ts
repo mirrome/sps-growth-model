@@ -33,8 +33,7 @@ function fmt(n: number): string {
 
 const raw = JSON.parse(readFileSync(SCENARIO_PATH, 'utf-8')) as unknown
 const scenario = parseScenario(raw)
-// baseYear is in the JSON but not yet promoted to the TypeScript type
-const BASE_YEAR = (scenario.meta as unknown as Record<string, number>).baseYear ?? 2026
+const BASE_YEAR = scenario.meta.baseYear
 const T = scenario.meta.horizonYears
 const policy = buildGrowthBaselinePolicy(scenario)
 const result = simulate(scenario, policy)

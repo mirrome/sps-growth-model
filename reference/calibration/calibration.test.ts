@@ -106,8 +106,7 @@ beforeAll(() => {
 
   const raw = JSON.parse(readFileSync(SCENARIO_PATH, 'utf-8')) as unknown
   const scenario = parseScenario(raw)
-  // baseYear is in the JSON but not yet promoted to the TypeScript type
-  BASE_YEAR = (scenario.meta as unknown as Record<string, number>).baseYear ?? 2026
+  BASE_YEAR = scenario.meta.baseYear
   T = scenario.meta.horizonYears
 
   const policy: Policy = buildGrowthBaselinePolicy(scenario)

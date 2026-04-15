@@ -90,6 +90,9 @@ function validateMeta(raw: unknown, errors: FieldError[]): Scenario['meta'] | nu
     name: typeof m.name === 'string' ? m.name : 'Unnamed',
     description: typeof m.description === 'string' ? m.description : undefined,
     horizonYears: 10,
+    // Default to 2026 for backward compatibility with scenario files that
+    // pre-date the baseYear field being promoted to the typed interface.
+    baseYear: 2026,
     isIllustrative: false,
   }
 
@@ -105,6 +108,11 @@ function validateMeta(raw: unknown, errors: FieldError[]): Scenario['meta'] | nu
     })
   } else {
     result.horizonYears = m.horizonYears
+  }
+
+  // baseYear is optional; default 2026 covers all pre-typed scenario files.
+  if (typeof m.baseYear === 'number' && Number.isFinite(m.baseYear) && m.baseYear > 1900) {
+    result.baseYear = Math.round(m.baseYear)
   }
 
   // isIllustrative is optional; default false so confidential files are never accidentally shown as illustrative

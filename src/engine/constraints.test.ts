@@ -12,7 +12,7 @@ const T = 3
 function makeScenario(): Scenario {
   return {
     schemaVersion: 1,
-    meta: { name: 'Constraint Test', horizonYears: T, isIllustrative: true },
+    meta: { name: 'Constraint Test', horizonYears: T, baseYear: 2026, isIllustrative: true },
     corporate: {
       taxRate: 0.3,
       rD: 0.06,
