@@ -36,6 +36,15 @@ export function simulate(scenario: Scenario, policy: Policy): SimResult {
     return row
   })
 
+  // Opening-of-year pipeline values — recorded before each year's R&D spend is added.
+  // The requirements formula P_{t+1} = P_t + μX_t − φP_{t−λ} uses P_{t−λ} as the
+  // opening balance at year t−λ (before that year's R&D), not the intra-year
+  // post-R&D value. Storing opening values separately avoids reading a pipeline[t−λ]
+  // that has already been augmented with year-(t−λ) R&D spend.
+  const pipelineOpening: number[][] = Array.from({ length: N }, () =>
+    new Array<number>(T + 1).fill(0),
+  )
+
   const cumulativeVolume: number[][] = lines.map((l) => {
     const row = new Array<number>(T + 1).fill(0)
     row[0] = l.baseCumulativeVolume
@@ -98,12 +107,17 @@ export function simulate(scenario: Scenario, policy: Policy): SimResult {
         bindingConstraint[i][t] = 'neither'
       }
 
-      // §3.6.4 Pipeline: augment P[t] with current R&D spend first, then read lag reference.
-      // R&D at year t is invested immediately into the pipeline. The lag λ measures
-      // the time from investment until conversion begins, so P[t-λ] (post-R&D) is used.
+      // §3.6.4 Pipeline: record opening balance, then augment with R&D.
+      // The lag reference P[t−λ] in the requirements formula refers to the OPENING
+      // pipeline at year t−λ (before that year's R&D spend). Reading pipeline[t−λ]
+      // after it has already been augmented with year-(t−λ) R&D would overcount the
+      // pipeline available to mature. By recording pipelineOpening[t] before the
+      // in-place R&D update, the lagged read always sees the correct opening value.
+      pipelineOpening[i][t] = pipeline[i][t]
       pipeline[i][t] += line.rdProductivity * rd
       const laggedPipelineIndex = t - line.rdLag
-      const pipelineMaturing = laggedPipelineIndex >= 0 ? pipeline[i][laggedPipelineIndex] : 0
+      const pipelineMaturing =
+        laggedPipelineIndex >= 0 ? pipelineOpening[i][laggedPipelineIndex] : 0
       const dRev = line.rdConversion * pipelineMaturing
       launchedRevenue[i][t] = dRev
 

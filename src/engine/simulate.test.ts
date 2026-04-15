@@ -181,7 +181,13 @@ describe('Test 2 — capex build lead time', () => {
 
 // ---------------------------------------------------------------------------
 // Test 3 — §8.1: R&D spending in year 0, lag 3, conversion 0.2.
-// No launched revenue before year 3. Pipeline depletes gradually after.
+//
+// Pipeline timing note: the formula P_{t+1} = P_t + μ·RD_t − φ·P_{t−λ}
+// uses P_0 = initialPipeline (before year-0 R&D). R&D at year 0 increases
+// P_1, not P_0. So launched revenue at year t = φ·P_{t−λ} first receives
+// year-0 R&D when t−λ = 1, i.e. t = λ+1. With initialPipeline=0, the
+// launched revenue is zero through year λ and first becomes positive at
+// year λ+1 (year "lag+1" below).
 // ---------------------------------------------------------------------------
 describe('Test 3 — R&D pipeline maturation lag', () => {
   it('no launched revenue appears before the lag has elapsed', () => {
@@ -198,13 +204,14 @@ describe('Test 3 — R&D pipeline maturation lag', () => {
     }
     const result = simulate(scenario, policy)
 
-    // Launched revenue must be zero for years 0, 1, 2 (before lag elapses)
-    for (let t = 0; t < lag; t++) {
+    // Launched revenue must be zero through year lag (P_0..P_lag excludes year-0 R&D)
+    for (let t = 0; t <= lag; t++) {
       expect(result.lines[0].launchedRevenue[t]).toBe(0)
     }
 
-    // Launched revenue must be positive starting at year lag
-    expect(result.lines[0].launchedRevenue[lag]).toBeGreaterThan(0)
+    // Launched revenue must be positive starting at year lag+1 (first reads P_1 which
+    // includes year-0 R&D: P_1 = P_0 + μ·RD_0 = 0 + μ·rdSpend > 0)
+    expect(result.lines[0].launchedRevenue[lag + 1]).toBeGreaterThan(0)
   })
 
   it('pipeline depletes gradually after the lag', () => {
@@ -217,8 +224,8 @@ describe('Test 3 — R&D pipeline maturation lag', () => {
     }
     const result = simulate(scenario, policy)
 
-    // Pipeline should decrease after year lag (being converted to revenue)
-    for (let t = lag; t < T; t++) {
+    // Pipeline starts draining at year lag+1 (when year-0 R&D first matures)
+    for (let t = lag + 1; t < T; t++) {
       expect(result.lines[0].pipeline[t + 1]).toBeLessThan(result.lines[0].pipeline[t])
     }
   })
