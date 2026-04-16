@@ -26,6 +26,7 @@ export default function App() {
   const isIllustrative = useSimStore((s) => s.isIllustrative)
   const [loadError, setLoadError] = useState<FieldError[] | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mathVisible, setMathVisible] = useState(false)
 
   useEffect(() => {
     const name = getScenarioName()
@@ -107,7 +108,20 @@ export default function App() {
             <span className="text-xs text-gray-400 font-normal">{scenario.meta.name}</span>
           )}
         </div>
-        <div className="text-xs text-gray-400">v{APP_VERSION} · MIT Global Lab 2026</div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setMathVisible((v) => !v)}
+            className={`text-xs rounded px-3 py-1 border transition-colors ${
+              mathVisible
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+            title={mathVisible ? 'Hide math drawer' : 'Show math drawer'}
+          >
+            {mathVisible ? '∑ Hide math' : '∑ Show math'}
+          </button>
+          <div className="text-xs text-gray-400">v{APP_VERSION} · MIT Global Lab 2026</div>
+        </div>
       </header>
 
       {/* Scenario banner — always visible, never dismissable */}
@@ -115,17 +129,19 @@ export default function App() {
         <ScenarioBanner isIllustrative={isIllustrative} scenarioName={scenario.meta.name} />
       )}
 
-      {/* Three-pane layout */}
+      {/* Three-pane layout — math drawer is togglable */}
       <div className="flex flex-1 overflow-hidden">
         <div className="w-1/4 shrink-0">
           <InputsPane />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <OutputsPane />
         </div>
-        <div className="w-1/4 shrink-0">
-          <MathPane />
-        </div>
+        {mathVisible && (
+          <div className="w-1/4 shrink-0 border-l border-gray-200">
+            <MathPane />
+          </div>
+        )}
       </div>
     </div>
   )
