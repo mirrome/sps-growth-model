@@ -319,13 +319,15 @@ export function buildGrowthBaselinePolicy(scenario: Scenario): Policy {
   //    alongside the modest day-one R&D below (total OCF headroom ~$4.6M)
   //  - Years 2-5: ramp to peak ~$290M/year as debt becomes available
   //  - Years 6-10: taper as growth lines mature
+  // Year-1 capex (index 1) is ~$102M pro-rata (PM Gate B): Y0 stays at $115M;
+  // Y1 must fit under accumulated cash when canRaiseDebt[1]=false (Y1 OCF dip).
   const capex: Record<string, number[]> = {
-    USS: [25, 25, 50, 55, 65, 60, 55, 45, 35, 30, 25],
-    SPN: [16, 16, 35, 40, 45, 40, 40, 30, 25, 20, 15],
-    FIS: [12, 12, 25, 30, 35, 35, 30, 25, 20, 15, 12],
-    EMS: [16, 16, 30, 35, 40, 35, 30, 25, 20, 18, 14],
-    ANS: [29, 29, 55, 65, 75, 70, 60, 55, 45, 35, 30],
-    NPS: [17, 17, 25, 35, 35, 40, 35, 30, 25, 20, 14],
+    USS: [25, 22, 50, 55, 65, 60, 55, 45, 35, 30, 25],
+    SPN: [16, 14, 35, 40, 45, 40, 40, 30, 25, 20, 15],
+    FIS: [12, 11, 25, 30, 35, 35, 30, 25, 20, 15, 12],
+    EMS: [16, 14, 30, 35, 40, 35, 30, 25, 20, 18, 14],
+    ANS: [29, 26, 55, 65, 75, 70, 60, 55, 45, 35, 30],
+    NPS: [17, 15, 25, 35, 35, 40, 35, 30, 25, 20, 14],
   }
 
   // R&D by line by year ($M). Modest day-one level in years 0-1 (2026-2027)

@@ -21,6 +21,7 @@ import { fileURLToPath } from 'url'
 import { describe, it, expect } from 'vitest'
 import { simulate, buildGrowthBaselinePolicy } from '../../src/engine/simulate'
 import { parseScenario } from '../../src/engine/scenario'
+import { evaluateConstraints } from '../../src/engine/constraints'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -74,5 +75,41 @@ describe('buildGrowthBaselinePolicy — integration guards', () => {
         `($${(2 * rev0).toFixed(1)}M, year-0 = $${rev0.toFixed(1)}M). ` +
         `Flag to PM — rock or capex arrays may need upward retuning.`,
     ).toBeGreaterThanOrEqual(2 * rev0)
+  })
+
+  it('debt-raising gate satisfied in year 0 and year 1 (canRaiseDebt false)', () => {
+    const policy = buildGrowthBaselinePolicy(illustrativeScenario)
+    const result = simulate(illustrativeScenario, policy)
+    const c = evaluateConstraints(illustrativeScenario, policy, result)
+
+    for (const t of [0, 1]) {
+      expect(
+        c.debtGate[t].satisfied,
+        `Year ${t} debt-raising gate: capex $${c.debtGate[t].value.toFixed(1)}M exceeds ` +
+          `available cash $${c.debtGate[t].limit.toFixed(1)}M (slack $${c.debtGate[t].slack.toFixed(1)}M). ` +
+          `Run: npx tsx scripts/print-gate-b-constraint-table.ts`,
+      ).toBe(true)
+    }
+  })
+
+  // Gate B (PM): capex budget must hold in Y2..Y10 once canRaiseDebt opens.
+  // Current growth-baseline peak (Y2–Y4 ~$220–295M) exceeds simulated cash +
+  // net-new-debt headroom while preserving the 2× revenue guard — that needs
+  // a hand-tuned policy from PM, not a uniform scale-down. Unskip after arrays
+  // are retuned; until then run: npx tsx scripts/print-gate-b-constraint-table.ts
+  it.skip('capex budget satisfied in years 2..T (unskip after PM retunes peak capex)', () => {
+    const policy = buildGrowthBaselinePolicy(illustrativeScenario)
+    const result = simulate(illustrativeScenario, policy)
+    const c = evaluateConstraints(illustrativeScenario, policy, result)
+    const T = illustrativeScenario.meta.horizonYears
+
+    for (let t = 2; t <= T; t++) {
+      expect(
+        c.capexBudget[t].satisfied,
+        `Year ${t} capex budget: capex $${c.capexBudget[t].value.toFixed(1)}M exceeds limit ` +
+          `$${c.capexBudget[t].limit.toFixed(1)}M (slack $${c.capexBudget[t].slack.toFixed(1)}M). ` +
+          `Run: npx tsx scripts/print-gate-b-constraint-table.ts`,
+      ).toBe(true)
+    }
   })
 })
