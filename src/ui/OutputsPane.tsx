@@ -10,7 +10,7 @@ import { useRef } from 'react'
 import { useSimStore } from '../store/useSimStore'
 import { AllCharts } from './Charts'
 import { ConstraintStrip } from './ConstraintStrip'
-import { exportChartAsPng } from './chartUtils'
+import { exportDashboardAsPng } from './chartUtils'
 
 interface KpiTileProps {
   label: string
@@ -131,7 +131,7 @@ export function OutputsPane() {
           )}
         </div>
         <button
-          onClick={() => exportChartAsPng(dashboardRef.current, 'sps-dashboard')}
+          onClick={() => exportDashboardAsPng(dashboardRef.current, 'sps-dashboard')}
           className="text-xs bg-gray-700 text-white rounded px-3 py-1.5 hover:bg-gray-800 transition-colors"
         >
           ↓ Export dashboard PNG

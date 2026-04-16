@@ -55,3 +55,52 @@ export async function exportChartAsPng(
     console.error('PNG export failed:', err)
   }
 }
+
+/**
+ * Export the full scrollable dashboard pane as a single PNG.
+ *
+ * The pane uses `h-full overflow-y-auto` so html-to-image would normally
+ * capture only the visible viewport. We temporarily lift those constraints,
+ * capture the full scrollHeight, then restore the original styles.
+ */
+export async function exportDashboardAsPng(
+  containerRef: HTMLElement | null,
+  filename: string,
+): Promise<void> {
+  if (!containerRef) return
+
+  const { style } = containerRef
+  const prev = {
+    height: style.height,
+    maxHeight: style.maxHeight,
+    overflow: style.overflow,
+    overflowY: style.overflowY,
+  }
+
+  // Expand to full content height so html-to-image sees everything
+  style.height = `${containerRef.scrollHeight}px`
+  style.maxHeight = 'none'
+  style.overflow = 'visible'
+  style.overflowY = 'visible'
+
+  try {
+    const dataUrl = await toPng(containerRef, {
+      backgroundColor: '#f9fafb', // bg-gray-50
+      pixelRatio: 2,
+      width: containerRef.scrollWidth,
+      height: containerRef.scrollHeight,
+    })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = `${filename}.png`
+    a.click()
+  } catch (err) {
+    console.error('Dashboard PNG export failed:', err)
+  } finally {
+    // Always restore — even if export throws
+    style.height = prev.height
+    style.maxHeight = prev.maxHeight
+    style.overflow = prev.overflow
+    style.overflowY = prev.overflowY
+  }
+}
