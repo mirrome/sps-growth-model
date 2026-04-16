@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { version as APP_VERSION } from '../../package.json'
 import { ScenarioBanner } from './ScenarioBanner'
 import { InputsPane } from './InputsPane'
 import { OutputsPane } from './OutputsPane'
@@ -106,7 +107,7 @@ export default function App() {
             <span className="text-xs text-gray-400 font-normal">{scenario.meta.name}</span>
           )}
         </div>
-        <div className="text-xs text-gray-400">v1.1 · MIT Global Lab 2026</div>
+        <div className="text-xs text-gray-400">v{APP_VERSION} · MIT Global Lab 2026</div>
       </header>
 
       {/* Scenario banner — always visible, never dismissable */}
