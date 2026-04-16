@@ -2,6 +2,8 @@
  * Shared chart utilities: color palette, PNG export, axis formatters.
  */
 
+import { toPng } from 'html-to-image'
+
 /** Six distinct colors — one per business line. Accessible, print-friendly. */
 export const LINE_COLORS = [
   '#2563eb', // blue-600
@@ -43,61 +45,13 @@ export async function exportChartAsPng(
   filename: string,
 ): Promise<void> {
   if (!containerRef) return
-
-  // Prefer the Recharts surface SVG; fall back to first SVG in the container.
-  const svgEl =
-    containerRef.querySelector<SVGSVGElement>('svg.recharts-surface') ??
-    containerRef.querySelector<SVGSVGElement>('svg')
-  if (!svgEl) return
-
-  // getBoundingClientRect gives the actual rendered size.
-  // clientWidth/clientHeight returns 0 when the SVG uses width="100%".
-  const rect = svgEl.getBoundingClientRect()
-  const width = rect.width || svgEl.clientWidth
-  const height = rect.height || svgEl.clientHeight
-  if (width === 0 || height === 0) return
-
-  // Clone and stamp explicit pixel dimensions so the <img> loads at full size.
-  const clone = svgEl.cloneNode(true) as SVGSVGElement
-  clone.setAttribute('width', String(width))
-  clone.setAttribute('height', String(height))
-
-  // Ensure the SVG xmlns declaration is present (required by some browsers).
-  let svgData = new XMLSerializer().serializeToString(clone)
-  if (!svgData.includes('xmlns="http://www.w3.org/2000/svg"')) {
-    svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+  try {
+    const dataUrl = await toPng(containerRef, { backgroundColor: '#ffffff', pixelRatio: 2 })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = `${filename}.png`
+    a.click()
+  } catch (err) {
+    console.error('PNG export failed:', err)
   }
-
-  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-  const url = URL.createObjectURL(svgBlob)
-
-  const img = new Image()
-  img.onload = () => {
-    const scale = 2 // 2× for retina-quality output
-    const canvas = document.createElement('canvas')
-    canvas.width = width * scale
-    canvas.height = height * scale
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      URL.revokeObjectURL(url)
-      return
-    }
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.scale(scale, scale)
-    ctx.drawImage(img, 0, 0)
-    URL.revokeObjectURL(url)
-
-    canvas.toBlob((blob) => {
-      if (!blob) return
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = `${filename}.png`
-      a.click()
-      URL.revokeObjectURL(a.href)
-    }, 'image/png')
-  }
-  img.onerror = () => URL.revokeObjectURL(url)
-  img.src = url
 }
