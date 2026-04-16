@@ -322,12 +322,12 @@ export function buildGrowthBaselinePolicy(scenario: Scenario): Policy {
   // Year-1 capex (index 1) is ~$102M pro-rata (PM Gate B): Y0 stays at $115M;
   // Y1 must fit under accumulated cash when canRaiseDebt[1]=false (Y1 OCF dip).
   const capex: Record<string, number[]> = {
-    USS: [25, 22, 50, 55, 65, 60, 55, 45, 35, 30, 25],
-    SPN: [16, 14, 35, 40, 45, 40, 40, 30, 25, 20, 15],
-    FIS: [12, 11, 25, 30, 35, 35, 30, 25, 20, 15, 12],
-    EMS: [16, 14, 30, 35, 40, 35, 30, 25, 20, 18, 14],
-    ANS: [29, 26, 55, 65, 75, 70, 60, 55, 45, 35, 30],
-    NPS: [17, 15, 25, 35, 35, 40, 35, 30, 25, 20, 14],
+    USS: [25, 22, 15, 16, 27, 60, 63, 60, 50, 39, 26],
+    SPN: [16, 14, 10, 11, 18, 40, 43, 40, 33, 26, 17],
+    FIS: [12, 11, 8, 8, 14, 33, 35, 34, 28, 22, 15],
+    EMS: [16, 14, 10, 11, 18, 36, 39, 37, 30, 23, 15],
+    ANS: [29, 26, 18, 19, 32, 70, 75, 72, 59, 46, 31],
+    NPS: [17, 15, 9, 10, 16, 36, 40, 37, 30, 24, 16],
   }
 
   // R&D by line by year ($M). Modest day-one level in years 0-1 (2026-2027)

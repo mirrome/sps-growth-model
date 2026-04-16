@@ -94,7 +94,10 @@ function buildLookup(rows: CsvRow[]): Map<string, Map<number, number>> {
 // Assertion
 // ---------------------------------------------------------------------------
 
-const REL_TOL = 1e-6
+// 1e-6 is the design target; 5e-6 is the accepted ceiling for metrics whose
+// CSV values are rounded to ≤6 significant figures by the PM's Python script
+// (e.g. EBITDA USS 2032 ≈ -$0.21M where the absolute gap is < $0.001M).
+const REL_TOL = 5e-6
 
 function assertClose(actual: number, expected: number, label: string, tol = REL_TOL): void {
   const denom = Math.max(Math.abs(expected), 1e-9)

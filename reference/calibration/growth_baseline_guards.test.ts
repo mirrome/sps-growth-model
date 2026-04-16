@@ -92,11 +92,9 @@ describe('buildGrowthBaselinePolicy — integration guards', () => {
     }
   })
 
-  // Gate B (PM): capex budget must hold in Y2..Y10 once canRaiseDebt opens.
-  // Current growth-baseline peak (Y2–Y4 ~$220–295M) exceeds simulated cash +
-  // net-new-debt headroom while preserving the 2× revenue guard — that needs
-  // a hand-tuned policy from PM, not a uniform scale-down. Unskip after arrays
-  // are retuned; until then run: npx tsx scripts/print-gate-b-constraint-table.ts
+  // Still failing in years 3–6 under revised arrays (worst: Y5 slack −$145.6M).
+  // Diagnostic: npx tsx scripts/print-gate-b-constraint-table.ts
+  // Unskip once PM provides arrays where every year's capex ≤ cash + new-debt.
   it.skip('capex budget satisfied in years 2..T (unskip after PM retunes peak capex)', () => {
     const policy = buildGrowthBaselinePolicy(illustrativeScenario)
     const result = simulate(illustrativeScenario, policy)
