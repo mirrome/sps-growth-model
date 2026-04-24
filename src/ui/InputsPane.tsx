@@ -14,6 +14,16 @@ import { useSimStore } from '../store/useSimStore'
 import type { Scenario, Policy } from '../engine/types'
 import { parseScenario } from '../engine/scenario'
 
+// Growth-regime metadata keyed by shortCode (matches slide deck)
+const REGIME: Record<string, { label: string; bg: string; text: string }> = {
+  ANS: { label: 'Strengthen', bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  USS: { label: 'Strengthen', bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  SPN: { label: 'Ignite', bg: 'bg-amber-100', text: 'text-amber-800' },
+  FIS: { label: 'Ignite', bg: 'bg-amber-100', text: 'text-amber-800' },
+  EMS: { label: 'Compound', bg: 'bg-violet-100', text: 'text-violet-800' },
+  NPS: { label: 'Compound', bg: 'bg-violet-100', text: 'text-violet-800' },
+}
+
 // ---------------------------------------------------------------------------
 // Accordion
 // ---------------------------------------------------------------------------
@@ -335,10 +345,11 @@ function SupplySection() {
             <span className="text-xs text-gray-500 w-10">Year {t}</span>
             <input
               type="number"
-              defaultValue={s}
+              defaultValue={Math.round(s)}
               min={0}
+              step={1}
               onChange={(e) => {
-                const v = parseFloat(e.target.value)
+                const v = Math.round(parseFloat(e.target.value))
                 if (!isNaN(v) && v >= 0) update(t, v)
               }}
               className="flex-1 text-xs border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:border-blue-400"
@@ -387,16 +398,24 @@ function BusinessLineSection() {
             }`}
           >
             {l.shortCode}
-            {l.isLegacy && ' ●'}
           </button>
         ))}
       </div>
 
-      {/* Active line name */}
-      <p className="text-xs font-semibold text-gray-700 mb-3">
+      {/* Active line name + regime badge */}
+      <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2 flex-wrap">
         {line.name}
+        {REGIME[line.shortCode] && (
+          <span
+            className={`text-xs rounded px-1.5 py-0.5 font-medium ${REGIME[line.shortCode].bg} ${REGIME[line.shortCode].text}`}
+          >
+            {REGIME[line.shortCode].label}
+          </span>
+        )}
         {line.isLegacy && (
-          <span className="ml-2 text-xs bg-blue-100 text-blue-700 rounded px-1">legacy</span>
+          <span className="text-xs bg-blue-100 text-blue-700 rounded px-1.5 py-0.5 font-medium">
+            Legacy
+          </span>
         )}
       </p>
 
