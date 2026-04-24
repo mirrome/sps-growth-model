@@ -11,6 +11,7 @@ import { ScenarioBanner } from './ScenarioBanner'
 import { InputsPane } from './InputsPane'
 import { OutputsPane } from './OutputsPane'
 import { MathPane } from './MathPane'
+import { PasswordGate } from './PasswordGate'
 import { parseScenario, ScenarioValidationError } from '../engine/scenario'
 import { useSimStore } from '../store/useSimStore'
 import type { FieldError } from '../engine/scenario'
@@ -20,13 +21,22 @@ function getScenarioName(): string {
   return params.get('scenario') ?? 'illustrative'
 }
 
+const SESSION_KEY = 'sps_auth'
+
 export default function App() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === '1')
   const setScenario = useSimStore((s) => s.setScenario)
   const scenario = useSimStore((s) => s.scenario)
   const isIllustrative = useSimStore((s) => s.isIllustrative)
   const [loadError, setLoadError] = useState<FieldError[] | null>(null)
   const [loading, setLoading] = useState(true)
+  const [inputsVisible, setInputsVisible] = useState(true)
   const [mathVisible, setMathVisible] = useState(false)
+
+  const unlock = () => {
+    sessionStorage.setItem(SESSION_KEY, '1')
+    setAuthed(true)
+  }
 
   useEffect(() => {
     const name = getScenarioName()
@@ -56,6 +66,8 @@ export default function App() {
   const handleResetToDefaults = () => {
     window.location.href = '/?scenario=illustrative'
   }
+
+  if (!authed) return <PasswordGate onUnlock={unlock} />
 
   if (loading) {
     return (
@@ -108,7 +120,18 @@ export default function App() {
             <span className="text-xs text-gray-400 font-normal">{scenario.meta.name}</span>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setInputsVisible((v) => !v)}
+            className={`text-xs rounded px-3 py-1 border transition-colors ${
+              inputsVisible
+                ? 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+            title={inputsVisible ? 'Hide inputs panel' : 'Show inputs panel'}
+          >
+            {inputsVisible ? '⊞ Hide inputs' : '⊞ Show inputs'}
+          </button>
           <button
             onClick={() => setMathVisible((v) => !v)}
             className={`text-xs rounded px-3 py-1 border transition-colors ${
@@ -120,7 +143,7 @@ export default function App() {
           >
             {mathVisible ? '∑ Hide math' : '∑ Show math'}
           </button>
-          <div className="text-xs text-gray-400">v{APP_VERSION} · MIT Global Lab 2026</div>
+          <div className="text-xs text-gray-400 pl-2">v{APP_VERSION} · MIT Global Lab 2026</div>
         </div>
       </header>
 
@@ -129,11 +152,13 @@ export default function App() {
         <ScenarioBanner isIllustrative={isIllustrative} scenarioName={scenario.meta.name} />
       )}
 
-      {/* Three-pane layout — math drawer is togglable */}
+      {/* Three-pane layout — inputs and math drawer are independently togglable */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 shrink-0">
-          <InputsPane />
-        </div>
+        {inputsVisible && (
+          <div className="w-1/4 shrink-0 border-r border-gray-200">
+            <InputsPane />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <OutputsPane />
         </div>
