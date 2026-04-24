@@ -29,12 +29,12 @@ interface IndicatorProps {
 
 function Indicator({ label, satisfied, binding, detail }: IndicatorProps) {
   const bg = !satisfied
-    ? 'bg-red-100 border-red-300'
+    ? 'bg-orange-50 border-orange-300'
     : binding
       ? 'bg-amber-50 border-amber-200'
       : 'bg-emerald-50 border-emerald-200'
-  const dot = !satisfied ? 'bg-red-500' : binding ? 'bg-amber-400' : 'bg-emerald-500'
-  const text = !satisfied ? 'text-red-700' : binding ? 'text-amber-700' : 'text-emerald-700'
+  const dot = !satisfied ? 'bg-orange-500' : binding ? 'bg-amber-400' : 'bg-emerald-500'
+  const text = !satisfied ? 'text-orange-700' : binding ? 'text-amber-700' : 'text-emerald-700'
 
   return (
     <div className={`flex items-start gap-2 border rounded px-2 py-1.5 ${bg}`}>
@@ -97,7 +97,7 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
           Constraint Status
         </h3>
         {status.anyViolation && (
-          <span className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+          <span className="text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-0.5">
             Violations detected
           </span>
         )}

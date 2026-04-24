@@ -59,7 +59,14 @@ export function evaluateConstraints(
   const supply: ConstraintYearStatus[] = Array.from({ length: T + 1 }, (_, t) => {
     const totalRock = policy.rock.reduce((sum, lineRock) => sum + (lineRock[t] ?? 0), 0)
     const limit = scenario.supply[t]
-    return { satisfied: totalRock <= limit, slack: limit - totalRock, value: totalRock, limit }
+    // 1e-6 kt tolerance (≈ 1 kg) absorbs floating-point rounding when six
+    // per-line allocations are summed — consistent with capex budget check.
+    return {
+      satisfied: totalRock <= limit + 1e-6,
+      slack: limit - totalRock,
+      value: totalRock,
+      limit,
+    }
   })
 
   // §3.8.2a Debt-raising gate: when canRaiseDebt[t] = false, the firm may not issue new
