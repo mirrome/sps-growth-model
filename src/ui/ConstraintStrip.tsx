@@ -165,7 +165,7 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
         <Indicator
           label="Capacity bounds"
           satisfied={capacity.allSatisfied}
-          binding={capacity.binding}
+          binding={false}
           detail={capacity.allSatisfied ? 'All within capacity' : 'Output exceeds capacity'}
         />
       </div>

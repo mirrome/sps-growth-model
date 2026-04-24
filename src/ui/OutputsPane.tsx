@@ -75,32 +75,12 @@ export function OutputsPane() {
   const T = scenario.meta.horizonYears
 
   const npvWithTV = result.npv
-  const npvExTV = result.npvExTV
   const terminalRevenue = result.lines.reduce((sum, line) => sum + line.revenue[T], 0)
-  const peakLeverage = Math.max(
-    ...result.debt.map((d, t) => (result.ebitda[t] > 0 ? d / result.ebitda[t] : 0)),
-  )
-
-  const leverageHighlight =
-    peakLeverage > scenario.corporate.leverageMax
-      ? 'danger'
-      : peakLeverage > scenario.corporate.leverageMax * 0.9
-        ? 'warn'
-        : 'normal'
 
   const refNPV = referenceResult?.npv
-  const refNPVExTV = referenceResult?.npvExTV
   const refTermRev = referenceResult
     ? referenceResult.lines.reduce((sum, line) => sum + line.revenue[T], 0)
     : null
-  const refPeakLev = referenceResult
-    ? Math.max(
-        ...referenceResult.debt.map((d, t) =>
-          referenceResult.ebitda[t] > 0 ? d / referenceResult.ebitda[t] : 0,
-        ),
-      )
-    : null
-
   function deltaStr(now: number, ref: number | undefined): string | undefined {
     if (ref === undefined || ref === null) return undefined
     return `${fmt(now - ref)} vs "${referenceLabel ?? 'reference'}"`
@@ -153,31 +133,11 @@ export function OutputsPane() {
             deltaPositive={deltaPos(npvWithTV, refNPV)}
           />
           <KpiTile
-            label="NPV (excl. terminal value)"
-            value={fmt(npvExTV)}
-            unit="USD millions"
-            highlight={npvExTV < 0 ? 'warn' : 'normal'}
-            delta={deltaStr(npvExTV, refNPVExTV)}
-            deltaPositive={deltaPos(npvExTV, refNPVExTV)}
-          />
-          <KpiTile
             label={`Revenue — Year ${T}`}
             value={fmt(terminalRevenue)}
             unit="USD millions"
             delta={refTermRev !== null ? deltaStr(terminalRevenue, refTermRev) : undefined}
             deltaPositive={refTermRev !== null ? deltaPos(terminalRevenue, refTermRev) : undefined}
-          />
-          <KpiTile
-            label="Peak leverage (D/EBITDA)"
-            value={fmt(peakLeverage, 2)}
-            unit={`× (ceiling ${scenario.corporate.leverageMax}×)`}
-            highlight={leverageHighlight}
-            delta={refPeakLev !== null ? deltaStr(peakLeverage, refPeakLev) : undefined}
-            deltaPositive={
-              refPeakLev !== null
-                ? deltaPos(-peakLeverage, refPeakLev ? -refPeakLev : undefined)
-                : undefined
-            }
           />
         </div>
       </section>
