@@ -27,6 +27,34 @@ import {
 import type { SimResult, Scenario } from '../engine/types'
 import { LINE_COLORS, fmtMillions, fmtKt, fmtRatio, fmtPrice, exportChartAsPng } from './chartUtils'
 
+/** Toggle state for per-series show/hide on legend click. */
+function useSeriesToggle() {
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const toggle = (key: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  /** Legend formatter — strikethrough + dimmed when hidden. */
+  const legendFormatter = (value: string) => (
+    <span
+      style={{
+        textDecoration: hidden.has(value) ? 'line-through' : 'none',
+        opacity: hidden.has(value) ? 0.4 : 1,
+        cursor: 'pointer',
+      }}
+    >
+      {value}
+    </span>
+  )
+  return { hidden, toggle, legendFormatter }
+}
+
 interface ChartsProps {
   result: SimResult
   scenario: Scenario
@@ -209,6 +237,7 @@ function buildLaunchedRevData(result: SimResult, scenario: Scenario) {
 // ---------------------------------------------------------------------------
 function RevenueChart({ result, scenario }: ChartsProps) {
   const data = buildYearData(result, scenario)
+  const { hidden, toggle, legendFormatter } = useSeriesToggle()
   return (
     <ChartCard title="Revenue by Business Line" unit="USD millions" chartId="revenue-by-line">
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
@@ -220,7 +249,12 @@ function RevenueChart({ result, scenario }: ChartsProps) {
             formatter={tooltipFormatter((v, n) => [fmtMillions(v), n])}
             labelFormatter={tooltipLabel}
           />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={legendFormatter}
+            onClick={(p) => toggle(String(p.value))}
+          />
           {scenario.businessLines.map((line, i) => (
             <Area
               key={line.shortCode}
@@ -231,6 +265,7 @@ function RevenueChart({ result, scenario }: ChartsProps) {
               fill={LINE_COLORS[i % LINE_COLORS.length]}
               fillOpacity={0.7}
               name={line.shortCode}
+              hide={hidden.has(line.shortCode)}
             />
           ))}
         </AreaChart>
@@ -309,6 +344,7 @@ function CapacityUtilChart({ result, scenario }: ChartsProps) {
 // ---------------------------------------------------------------------------
 function ProductionChart({ result, scenario }: ChartsProps) {
   const data = buildProductionData(result, scenario)
+  const { hidden, toggle, legendFormatter } = useSeriesToggle()
   return (
     <ChartCard
       title="Production Volume by Business Line"
@@ -324,7 +360,12 @@ function ProductionChart({ result, scenario }: ChartsProps) {
             formatter={tooltipFormatter((v, n) => [fmtKt(v), n])}
             labelFormatter={tooltipLabel}
           />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={legendFormatter}
+            onClick={(p) => toggle(String(p.value))}
+          />
           {scenario.businessLines.map((line, i) => (
             <Line
               key={line.shortCode}
@@ -334,6 +375,7 @@ function ProductionChart({ result, scenario }: ChartsProps) {
               dot={false}
               strokeWidth={2}
               name={line.shortCode}
+              hide={hidden.has(line.shortCode)}
             />
           ))}
         </LineChart>
@@ -351,6 +393,7 @@ interface RockChartProps extends ChartsProps {
 
 function RockAllocationChart({ scenario, policy }: RockChartProps) {
   const data = buildRockData(scenario, policy)
+  const { hidden, toggle, legendFormatter } = useSeriesToggle()
   return (
     <ChartCard title="Supply Allocation" unit="Kilotons per year" chartId="rock-allocation">
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
@@ -360,12 +403,17 @@ function RockAllocationChart({ scenario, policy }: RockChartProps) {
           <YAxis tickFormatter={fmtKt} tick={{ fontSize: 11 }} width={52} />
           <Tooltip
             formatter={tooltipFormatter((v, n) => [
-              n === 'supply' ? `${fmtKt(v)} (ceiling)` : fmtKt(v),
+              n === 'Supply ceiling' ? `${fmtKt(v)} (ceiling)` : fmtKt(v),
               n,
             ])}
             labelFormatter={tooltipLabel}
           />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={legendFormatter}
+            onClick={(p) => toggle(String(p.value))}
+          />
           {scenario.businessLines.map((line, i) => (
             <Area
               key={line.shortCode}
@@ -376,6 +424,7 @@ function RockAllocationChart({ scenario, policy }: RockChartProps) {
               fill={LINE_COLORS[i % LINE_COLORS.length]}
               fillOpacity={0.6}
               name={line.shortCode}
+              hide={hidden.has(line.shortCode)}
             />
           ))}
           <Line
@@ -386,6 +435,7 @@ function RockAllocationChart({ scenario, policy }: RockChartProps) {
             strokeWidth={2}
             dot={false}
             name="Supply ceiling"
+            hide={hidden.has('Supply ceiling')}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -440,6 +490,7 @@ function LeverageChart({ result, scenario }: ChartsProps) {
 // ---------------------------------------------------------------------------
 function UnitCostChart({ result, scenario }: ChartsProps) {
   const data = buildUnitCostData(result, scenario)
+  const { hidden, toggle, legendFormatter } = useSeriesToggle()
   return (
     <ChartCard
       title="Unit Production Cost by Business Line"
@@ -455,7 +506,12 @@ function UnitCostChart({ result, scenario }: ChartsProps) {
             formatter={tooltipFormatter((v, n) => [fmtPrice(v), n])}
             labelFormatter={tooltipLabel}
           />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={legendFormatter}
+            onClick={(p) => toggle(String(p.value))}
+          />
           {scenario.businessLines.map((line, i) => (
             <Line
               key={line.shortCode}
@@ -465,6 +521,7 @@ function UnitCostChart({ result, scenario }: ChartsProps) {
               dot={false}
               strokeWidth={2}
               name={line.shortCode}
+              hide={hidden.has(line.shortCode)}
             />
           ))}
         </LineChart>
@@ -478,6 +535,7 @@ function UnitCostChart({ result, scenario }: ChartsProps) {
 // ---------------------------------------------------------------------------
 function LaunchedRevenueChart({ result, scenario }: ChartsProps) {
   const data = buildLaunchedRevData(result, scenario)
+  const { hidden, toggle, legendFormatter } = useSeriesToggle()
   return (
     <ChartCard
       title="Revenue from Newly Developed Products"
@@ -493,7 +551,12 @@ function LaunchedRevenueChart({ result, scenario }: ChartsProps) {
             formatter={tooltipFormatter((v, n) => [fmtMillions(v), n])}
             labelFormatter={tooltipLabel}
           />
-          <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+          <Legend
+            iconSize={10}
+            wrapperStyle={{ fontSize: 11 }}
+            formatter={legendFormatter}
+            onClick={(p) => toggle(String(p.value))}
+          />
           {scenario.businessLines.map((line, i) => (
             <Area
               key={line.shortCode}
@@ -504,6 +567,7 @@ function LaunchedRevenueChart({ result, scenario }: ChartsProps) {
               fill={LINE_COLORS[i % LINE_COLORS.length]}
               fillOpacity={0.7}
               name={line.shortCode}
+              hide={hidden.has(line.shortCode)}
             />
           ))}
         </AreaChart>
