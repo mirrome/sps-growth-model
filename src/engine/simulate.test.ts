@@ -44,7 +44,7 @@ function singleLineScenario(overrides: LineOverrides = {}): Scenario {
       terminalGrowth: 0.02,
       depreciation: new Array<number>(horizon + 1).fill(20),
     },
-    rockSupply: new Array<number>(horizon + 1).fill(10000),
+    supply: new Array<number>(horizon + 1).fill(10000),
     businessLines: [
       {
         name: 'Line A',
@@ -235,7 +235,7 @@ describe('Test 3 — R&D pipeline maturation lag', () => {
 // Test 4 — §8.1: Rock allocation exceeds supply.
 // The constraints module must flag a violation.
 // ---------------------------------------------------------------------------
-describe('Test 4 — rock supply constraint violation', () => {
+describe('Test 4 — supply constraint violation', () => {
   it('flags a violation when total rock exceeds supply', async () => {
     const { evaluateConstraints } = await import('./constraints')
     const scenario = makeScenario()
@@ -249,8 +249,8 @@ describe('Test 4 — rock supply constraint violation', () => {
     const status = evaluateConstraints(scenario, policy, result)
 
     expect(status.anyViolation).toBe(true)
-    expect(status.rockSupply.some((s) => !s.satisfied)).toBe(true)
-    expect(status.rockSupply.some((s) => s.slack < 0)).toBe(true)
+    expect(status.supply.some((s) => !s.satisfied)).toBe(true)
+    expect(status.supply.some((s) => s.slack < 0)).toBe(true)
   })
 
   it('does not flag a violation when rock is within supply', async () => {
@@ -260,7 +260,7 @@ describe('Test 4 — rock supply constraint violation', () => {
     const result = simulate(scenario, policy)
     const status = evaluateConstraints(scenario, policy, result)
 
-    expect(status.rockSupply.every((s) => s.satisfied)).toBe(true)
+    expect(status.supply.every((s) => s.satisfied)).toBe(true)
   })
 })
 

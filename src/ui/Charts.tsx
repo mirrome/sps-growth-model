@@ -165,7 +165,7 @@ function buildRockData(scenario: Scenario, policy: { rock: number[][] }) {
   return Array.from({ length: T + 1 }, (_, t) => {
     const row: Record<string, number> = {
       year: t,
-      supply: scenario.rockSupply[t],
+      supply: scenario.supply[t],
     }
     scenario.businessLines.forEach((line, i) => {
       row[line.shortCode] = policy.rock[i]?.[t] ?? 0
@@ -352,7 +352,7 @@ interface RockChartProps extends ChartsProps {
 function RockAllocationChart({ scenario, policy }: RockChartProps) {
   const data = buildRockData(scenario, policy)
   return (
-    <ChartCard title="Rock Allocation vs Supply" unit="Kilotons per year" chartId="rock-allocation">
+    <ChartCard title="Supply Allocation" unit="Kilotons per year" chartId="rock-allocation">
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <AreaChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

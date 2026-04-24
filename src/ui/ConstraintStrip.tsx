@@ -5,7 +5,7 @@
  * in any year. Red for violation, amber for binding (< 5% slack), green for satisfied.
  *
  * Six indicators (2 rows of 3):
- *   Rock supply | Capex budget | Leverage
+ *   Supply | Capex budget | Leverage
  *   Debt gate   | Legacy floors | Capacity bounds
  *
  * "Capex budget" catches "total funding (cash + allowed debt) is insufficient."
@@ -59,8 +59,8 @@ function summarizeStatuses(statuses: { satisfied: boolean; slack: number }[]): {
 }
 
 export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
-  // Rock supply
-  const rock = summarizeStatuses(status.rockSupply)
+  // Supply
+  const rock = summarizeStatuses(status.supply)
 
   // Capex budget (cash + allowed debt)
   const capex = summarizeStatuses(status.capexBudget)
@@ -109,7 +109,7 @@ export function ConstraintStrip({ status, leverageMax }: ConstraintStripProps) {
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Indicator
-          label="Rock supply"
+          label="Supply"
           satisfied={rock.allSatisfied}
           binding={rock.binding}
           detail={

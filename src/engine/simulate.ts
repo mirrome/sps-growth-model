@@ -250,7 +250,7 @@ export function buildEqualPolicy(scenario: Scenario): Policy {
     rock: scenario.businessLines.map((_, i) =>
       Array.from(
         { length: T + 1 },
-        (_, t) => scenario.rockSupply[t] * share * (1 / scenario.businessLines[i].yield),
+        (_, t) => scenario.supply[t] * share * (1 / scenario.businessLines[i].yield),
       ),
     ),
     capex: Array.from({ length: N }, () => new Array<number>(T + 1).fill(0)),
@@ -298,48 +298,60 @@ export function buildCalibrationPolicy(scenario: Scenario): Policy {
  * and bump the schema version rather than silently applying zeros.
  */
 export function buildGrowthBaselinePolicy(scenario: Scenario): Policy {
-  // Rock allocation by line by year (kt/yr). Ramps from current run-rate
-  // toward growth targets grounded in OCP strategy notes:
-  //  - USS toward the 1Mt PPA target
-  //  - SPN from 100kt to ~500kt (OCP-stated 400kt by 2030 plus headroom)
-  //  - FIS to ~200kt (OCP three-phase build-out)
-  //  - ANS scaling 4% to ~10% market share path
-  //  - EMS and NPS held as strategic optionality with modest growth
+  // Supply allocation by line by year (kt/yr). ECR v2 April 2026.
+  // Shares: USS 50%, SPN 15%, FIS 5%, EMS 8%, ANS 12%, NPS 10%.
+  // Values = share × supply[t] for all t (100% allocation, no waste).
+  // Y0–Y7 from SPS_Growth_Model_Params.xlsx; Y8–Y10 extended at supply growth rates.
   const rock: Record<string, number[]> = {
-    USS: [522, 600, 680, 760, 840, 910, 980, 1060, 1140, 1220, 1300],
-    SPN: [141, 200, 260, 320, 380, 420, 460, 500, 530, 550, 565],
-    FIS: [53, 75, 100, 125, 150, 170, 190, 210, 225, 245, 265],
-    EMS: [20, 25, 30, 35, 40, 45, 50, 55, 55, 60, 60],
-    ANS: [389, 440, 490, 545, 600, 660, 720, 780, 840, 905, 970],
-    NPS: [24, 27, 30, 33, 36, 39, 42, 45, 46, 47, 48],
+    USS: [
+      650, 663, 696.15, 737.919, 782.194, 860.4135, 972.2675, 1118.1075, 1274.6425, 1516.8245,
+      1820.1895,
+    ],
+    SPN: [
+      195, 198.9, 208.845, 221.3757, 234.6582, 258.12405, 291.68025, 335.43225, 382.39275,
+      455.04735, 546.05685,
+    ],
+    FIS: [
+      65, 66.3, 69.615, 73.7919, 78.2194, 86.04135, 97.22675, 111.81075, 127.46425, 151.68245,
+      182.01895,
+    ],
+    EMS: [
+      104, 106.08, 111.384, 118.06704, 125.15104, 137.66616, 155.5628, 178.8972, 203.9428,
+      242.69192, 291.23032,
+    ],
+    ANS: [
+      156, 159.12, 167.076, 177.10056, 187.72656, 206.49924, 233.3442, 268.3458, 305.9142,
+      364.03788, 436.84548,
+    ],
+    NPS: [
+      130, 132.6, 139.23, 147.5838, 156.4388, 172.0827, 194.4535, 223.6215, 254.9285, 303.3649,
+      364.0379,
+    ],
   }
 
-  // Capex by line by year ($M). Total capex respects the debt-raising gate:
-  //  - Years 0-1 (2026-2027): ~$115M/year, sized to fit under pre-capex OCF of ~$120M
-  //    alongside the modest day-one R&D below (total OCF headroom ~$4.6M)
-  //  - Years 2-5: ramp to peak ~$290M/year as debt becomes available
-  //  - Years 6-10: taper as growth lines mature
-  // Year-1 capex (index 1) is ~$102M pro-rata (PM Gate B): Y0 stays at $115M;
-  // Y1 must fit under accumulated cash when canRaiseDebt[1]=false (Y1 OCF dip).
+  // Capex by line by year ($M). ECR v2 April 2026.
+  // Y0–Y7 from "current Capex Alloc" sheet of SPS_Growth_Model_Params.xlsx.
+  // Y8–Y10 extended at 15% annual taper from Y7, floored at 10 per line.
+  // Note: SPN Y3 = 4 is intentional (construction phasing gap per ECR §6.1).
   const capex: Record<string, number[]> = {
-    USS: [25, 22, 15, 16, 27, 60, 63, 60, 50, 39, 26],
-    SPN: [16, 14, 10, 11, 18, 40, 43, 40, 33, 26, 17],
-    FIS: [12, 11, 8, 8, 14, 33, 35, 34, 28, 22, 15],
-    EMS: [16, 14, 10, 11, 18, 36, 39, 37, 30, 23, 15],
-    ANS: [29, 26, 18, 19, 32, 70, 75, 72, 59, 46, 31],
-    NPS: [17, 15, 9, 10, 16, 36, 40, 37, 30, 24, 16],
+    USS: [25, 25, 50, 55, 65, 60, 55, 45, 38, 32, 27],
+    SPN: [16, 16, 35, 4, 45, 40, 40, 30, 26, 22, 19],
+    FIS: [12, 12, 25, 30, 35, 35, 30, 25, 21, 18, 15],
+    EMS: [16, 16, 30, 35, 40, 35, 30, 25, 21, 18, 15],
+    ANS: [29, 29, 55, 65, 75, 70, 60, 55, 47, 40, 34],
+    NPS: [17, 17, 25, 35, 35, 40, 35, 30, 26, 22, 19],
   }
 
-  // R&D by line by year ($M). Modest day-one level in years 0-1 (2026-2027)
-  // to sustain pipeline continuity while the debt gate is closed; full rate
-  // from year 2 (2028). Concentrated in Build and Exploratory phase lines.
+  // R&D by line by year ($M). ECR v2 April 2026.
+  // Y0–Y7 from SPS_Growth_Model_Params.xlsx (70–85% reduction vs old budget).
+  // Y8–Y10 extended at supply growth rates (×1.14, ×1.19, ×1.20).
   const rd: Record<string, number[]> = {
-    USS: [3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-    SPN: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
-    FIS: [2, 2, 8, 8, 8, 8, 8, 8, 8, 8, 8],
-    EMS: [8, 8, 18, 18, 18, 18, 18, 18, 18, 18, 18],
-    ANS: [3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5],
-    NPS: [7, 7, 15, 15, 15, 15, 15, 15, 15, 15, 15],
+    USS: [5, 5.1, 5.36, 3.97, 3.61, 4.63, 4.49, 4.3, 4.9, 5.83, 7],
+    SPN: [1.5, 1.53, 1.61, 1.7, 1.81, 1.99, 2.24, 2.58, 2.94, 3.5, 4.2],
+    FIS: [1.5, 0.51, 0.54, 2.27, 2.41, 2.65, 2.99, 3.44, 3.92, 4.66, 5.59],
+    EMS: [0.8, 0.82, 0.86, 0.91, 1.56, 1.32, 1.94, 3.44, 3.92, 4.66, 5.59],
+    ANS: [0, 1.22, 1.29, 1.36, 1.44, 1.32, 1.8, 1.72, 1.96, 2.33, 2.8],
+    NPS: [1, 1.02, 1.07, 1.14, 1.2, 1.32, 1.5, 1.72, 1.96, 2.33, 2.8],
   }
 
   return {

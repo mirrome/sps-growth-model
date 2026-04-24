@@ -3,7 +3,7 @@
  *
  * Organized as collapsible accordion sections:
  * 1. Corporate parameters — sliders
- * 2. Rock supply — editable time series
+ * 2. Supply — editable time series
  * 3. Business line parameters — tabbed, one tab per line
  * 4. Allocation policy — rock, capex, R&D tables with column-sum validation
  * 5. Scenario controls — save, load, export, import, reset
@@ -310,10 +310,10 @@ function NumericField({
 }
 
 // ---------------------------------------------------------------------------
-// Rock Supply accordion
+// Supply accordion
 // ---------------------------------------------------------------------------
 
-function RockSupplySection() {
+function SupplySection() {
   const scenario = useSimStore((s) => s.scenario)
   const setScenarioStore = useSimStore((s) => s.setScenario)
   const isIllustrative = useSimStore((s) => s.isIllustrative)
@@ -321,16 +321,16 @@ function RockSupplySection() {
   if (!scenario) return null
 
   const update = (t: number, v: number) => {
-    const newSupply = [...scenario.rockSupply]
+    const newSupply = [...scenario.supply]
     newSupply[t] = v
-    setScenarioStore({ ...scenario, rockSupply: newSupply }, isIllustrative)
+    setScenarioStore({ ...scenario, supply: newSupply }, isIllustrative)
   }
 
   return (
     <div className="pt-2">
       <p className="text-xs text-gray-400 mb-2">Kilotons per year available to SPS each year.</p>
       <div className="space-y-1">
-        {scenario.rockSupply.map((s, t) => (
+        {scenario.supply.map((s, t) => (
           <div key={t} className="flex items-center gap-2">
             <span className="text-xs text-gray-500 w-10">Year {t}</span>
             <input
@@ -442,7 +442,7 @@ function BusinessLineSection() {
         onChange={(v) => updateLine(activeTab, { learningExponent: v })}
       />
       <SliderField
-        label="Yield (η, kt product/kt rock)"
+        label="Yield (η, kt product/kt feedstock)"
         value={line.yield}
         min={0.1}
         max={1}
@@ -522,7 +522,7 @@ function AllocationTable({
   const policyData = type === 'rock' ? policy.rock : type === 'capex' ? policy.capex : policy.rd
 
   const labels = {
-    rock: 'Rock allocation (kt/yr)',
+    rock: 'Supply allocation (kt/yr)',
     capex: 'Capex ($M/yr)',
     rd: 'R&D spending ($M/yr)',
   }
@@ -547,7 +547,7 @@ function AllocationTable({
           </thead>
           <tbody>
             {scenario.businessLines.map((line, i) => {
-              // Column sums for rock supply constraint check
+              // Column sums for supply constraint check
               return (
                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td
@@ -560,8 +560,7 @@ function AllocationTable({
                     const val = policyData[i]?.[t] ?? 0
                     const isOverSupply =
                       type === 'rock' &&
-                      policy.rock.reduce((sum, row) => sum + (row[t] ?? 0), 0) >
-                        scenario.rockSupply[t]
+                      policy.rock.reduce((sum, row) => sum + (row[t] ?? 0), 0) > scenario.supply[t]
                     return (
                       <td key={t} className="px-0.5 py-0.5">
                         <input
@@ -590,7 +589,7 @@ function AllocationTable({
               <td className="pr-2 py-1 text-xs font-semibold text-gray-500">Total</td>
               {shownYears.map((t) => {
                 const total = policyData.reduce((sum, row) => sum + (row[t] ?? 0), 0)
-                const supply = type === 'rock' ? scenario.rockSupply[t] : null
+                const supply = type === 'rock' ? scenario.supply[t] : null
                 const overSupply = supply !== null && total > supply
                 return (
                   <td
@@ -761,8 +760,8 @@ export function InputsPane() {
         <CorporateSection />
       </AccordionSection>
 
-      <AccordionSection title="Rock Supply">
-        <RockSupplySection />
+      <AccordionSection title="Supply">
+        <SupplySection />
       </AccordionSection>
 
       <AccordionSection title="Business Line Parameters">

@@ -55,10 +55,10 @@ export function evaluateConstraints(
     return available
   })
 
-  // §3.8.1 Rock supply: Σ r_{i,t} ≤ S_t
-  const rockSupply: ConstraintYearStatus[] = Array.from({ length: T + 1 }, (_, t) => {
+  // §3.8.1 Supply: Σ r_{i,t} ≤ S_t
+  const supply: ConstraintYearStatus[] = Array.from({ length: T + 1 }, (_, t) => {
     const totalRock = policy.rock.reduce((sum, lineRock) => sum + (lineRock[t] ?? 0), 0)
-    const limit = scenario.rockSupply[t]
+    const limit = scenario.supply[t]
     return { satisfied: totalRock <= limit, slack: limit - totalRock, value: totalRock, limit }
   })
 
@@ -147,12 +147,12 @@ export function evaluateConstraints(
   )
 
   const anyViolation =
-    rockSupply.some((s) => !s.satisfied) ||
+    supply.some((s) => !s.satisfied) ||
     debtGate.some((s) => !s.satisfied) ||
     capexBudget.some((s) => !s.satisfied) ||
     leverage.some((s) => !s.satisfied) ||
     legacyFloor.some((lineStatuses) => lineStatuses.some((s) => s !== null && !s.satisfied)) ||
     capacity.some((lineStatuses) => lineStatuses.some((s) => !s.satisfied))
 
-  return { rockSupply, debtGate, capexBudget, leverage, legacyFloor, capacity, anyViolation }
+  return { supply, debtGate, capexBudget, leverage, legacyFloor, capacity, anyViolation }
 }

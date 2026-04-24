@@ -56,13 +56,8 @@ export function parseScenario(raw: unknown): Scenario {
   // corporate
   const corporate = validateCorporate(obj.corporate, meta?.horizonYears ?? 10, errors)
 
-  // rockSupply
-  const rockSupply = validateNumberArray(
-    obj.rockSupply,
-    'rockSupply',
-    (meta?.horizonYears ?? 10) + 1,
-    errors,
-  )
+  // supply
+  const supply = validateNumberArray(obj.supply, 'supply', (meta?.horizonYears ?? 10) + 1, errors)
 
   // businessLines
   const businessLines = validateBusinessLines(obj.businessLines, meta?.horizonYears ?? 10, errors)
@@ -75,7 +70,7 @@ export function parseScenario(raw: unknown): Scenario {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     meta: meta!,
     corporate: corporate!,
-    rockSupply: rockSupply!,
+    supply: supply!,
     businessLines: businessLines!,
   }
 }

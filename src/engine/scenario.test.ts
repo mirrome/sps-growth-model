@@ -24,7 +24,7 @@ function makeValidScenario(): object {
       terminalGrowth: 0.025,
       depreciation: [10, 11, 12, 13],
     },
-    rockSupply: [1000, 1050, 1100, 1150],
+    supply: [1000, 1050, 1100, 1150],
     businessLines: [
       {
         name: 'Test Line A',
@@ -95,15 +95,15 @@ describe('parseScenario', () => {
     expect(() => parseScenario(raw)).toThrow(ScenarioValidationError)
   })
 
-  it('rejects rockSupply array of wrong length', () => {
+  it('rejects supply array of wrong length', () => {
     const raw = makeValidScenario() as Record<string, unknown>
-    raw.rockSupply = [1000, 1050]
+    raw.supply = [1000, 1050]
     expect(() => parseScenario(raw)).toThrow(ScenarioValidationError)
     try {
       parseScenario(raw)
     } catch (e) {
       const err = e as ScenarioValidationError
-      expect(err.fieldErrors.some((f) => f.field === 'rockSupply')).toBe(true)
+      expect(err.fieldErrors.some((f) => f.field === 'supply')).toBe(true)
     }
   })
 

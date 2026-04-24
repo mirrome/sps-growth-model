@@ -23,7 +23,7 @@ function makeScenario(): Scenario {
       terminalGrowth: 0.02,
       depreciation: [20, 20, 20, 20],
     },
-    rockSupply: [1000, 1000, 1000, 1000],
+    supply: [1000, 1000, 1000, 1000],
     businessLines: [
       {
         name: 'Line A',
@@ -71,7 +71,7 @@ function makeScenario(): Scenario {
   }
 }
 
-describe('§3.8.1 Rock supply constraint', () => {
+describe('§3.8.1 Supply constraint', () => {
   it('satisfied when total rock ≤ supply', () => {
     const scenario = makeScenario()
     const policy: Policy = {
@@ -82,8 +82,8 @@ describe('§3.8.1 Rock supply constraint', () => {
     const result = simulate(scenario, policy)
     const status = evaluateConstraints(scenario, policy, result)
 
-    expect(status.rockSupply.every((s) => s.satisfied)).toBe(true)
-    expect(status.rockSupply[0].slack).toBeCloseTo(200, 4)
+    expect(status.supply.every((s) => s.satisfied)).toBe(true)
+    expect(status.supply[0].slack).toBeCloseTo(200, 4)
   })
 
   it('violated when total rock > supply', () => {
@@ -96,7 +96,7 @@ describe('§3.8.1 Rock supply constraint', () => {
     const result = simulate(scenario, policy)
     const status = evaluateConstraints(scenario, policy, result)
 
-    expect(status.rockSupply.every((s) => !s.satisfied)).toBe(true)
+    expect(status.supply.every((s) => !s.satisfied)).toBe(true)
     expect(status.anyViolation).toBe(true)
   })
 })
@@ -271,6 +271,6 @@ describe('anyViolation flag', () => {
     const result = simulate(scenario, policy)
     const status = evaluateConstraints(scenario, policy, result)
     // With adequate rock and low debt, all constraints should pass
-    expect(status.rockSupply.every((s) => s.satisfied)).toBe(true)
+    expect(status.supply.every((s) => s.satisfied)).toBe(true)
   })
 })

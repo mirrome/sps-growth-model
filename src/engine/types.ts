@@ -98,8 +98,8 @@ export interface Scenario {
     isIllustrative: boolean
   }
   corporate: CorporateParams
-  /** S_t — rock supply by year (kt/yr), length T+1 */
-  rockSupply: number[]
+  /** S_t — supply by year (kt/yr), length T+1 */
+  supply: number[]
   businessLines: BusinessLineParams[]
 }
 
@@ -183,7 +183,7 @@ export interface ConstraintYearStatus {
 
 /** Full constraint evaluation result across all years. */
 export interface ConstraintStatus {
-  rockSupply: ConstraintYearStatus[]
+  supply: ConstraintYearStatus[]
   capexBudget: ConstraintYearStatus[]
   leverage: ConstraintYearStatus[]
   /** Indexed [lineIndex][year] for legacy lines only */

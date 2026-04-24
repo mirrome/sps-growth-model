@@ -8,17 +8,20 @@
     "notes": "OCP-provided scenario for the SPS growth model. Corporate parameters reflect the SPS financial profile within OCP Group. Business line parameters reflect current run-rate production, pricing, and capex plans as communicated by OCP. To be refreshed as actuals are confirmed quarterly."
   },
   "corporate": {
-    "taxRate": 0.28,
-    "rD": 0.062,
-    "rE": 0.1454,
-    "equity0": 900,
-    "debt0": 900,
-    "leverageMax": 2.75,
-    "terminalGrowth": 0.025,
+    "taxRate": 0.1,
+    "rD": 0.046,
+    "rE": 0.12,
+    "equity0": 1000,
+    "debt0": 500,
+    "leverageMax": 3.5,
+    "terminalGrowth": 0.028,
     "depreciation": [65, 72, 80, 90, 102, 116, 132, 150, 170, 192, 216],
     "canRaiseDebt": [false, false, true, true, true, true, true, true, true, true, true]
   },
-  "rockSupply": [1400, 1650, 1900, 2150, 2400, 2600, 2800, 3050, 3300, 3500, 3600],
+  "supply": [
+    1300, 1326, 1392.3, 1475.838, 1564.388, 1720.827, 1944.535, 2236.215, 2549.285, 3033.649,
+    3640.379
+  ],
   "businessLines": [
     {
       "name": "Upstream Specialty Solutions and LFP",

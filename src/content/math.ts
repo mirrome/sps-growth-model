@@ -186,8 +186,8 @@ export const MATH_SECTIONS: MathSection[] = [
       'The tool is designed to help leadership find the allocation of rock, capital, and research spending across the six business lines and the ten years of the plan that generates the highest net present value. In this first version of the tool, the user explores this decision space by hand, adjusting sliders and tables and watching the consequences in the output charts. The approach builds intuition about which levers matter most and where tradeoffs are steep.\n\nA second version of the tool will add a numerical solver that searches the space automatically and reports the allocation that maximizes NPV subject to all the constraints. Even with a solver, the interactive version one remains valuable because it lets leadership test specific strategic beliefs and explore what-if scenarios that the optimizer would not volunteer.',
   },
   {
-    id: 'constraint_rock',
-    title: 'Total Rock Allocated Cannot Exceed What OCP Can Supply',
+    id: 'constraint_supply',
+    title: 'Total Feedstock Allocated Cannot Exceed What OCP Can Supply',
     equations: [
       {
         id: 'rock-constraint',
@@ -195,7 +195,7 @@ export const MATH_SECTIONS: MathSection[] = [
       },
     ],
     prose:
-      'The six SPS business lines share a single upstream input, phosphate rock mined and supplied by OCP. In any given year, the total rock allocated across the six lines cannot exceed what the upstream mining operation can deliver to SPS. The supply figure grows over the horizon as OCP expands its mining and processing capacity, but in any single year it is a hard ceiling. The tool flags any allocation that breaches the ceiling and shows the magnitude of the overage, because rock unavailability is a real physical constraint that no financing solution can relax in the short term.',
+      'The six SPS business lines share a single upstream feedstock input supplied by OCP. In any given year, the total feedstock allocated across the six lines cannot exceed what the upstream operation can deliver to SPS. The supply figure grows over the horizon as OCP expands its mining and processing capacity, but in any single year it is a hard ceiling. The tool flags any allocation that breaches the ceiling and shows the magnitude of the overage, because supply unavailability is a real physical constraint that no financing solution can relax in the short term.',
   },
   {
     id: 'constraint_capex',
