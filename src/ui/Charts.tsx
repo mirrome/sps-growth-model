@@ -8,7 +8,7 @@
  * - Has a PNG export button
  */
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   AreaChart,
   Area,
@@ -46,35 +46,64 @@ function tickYear(t: unknown) {
   return `Y${t}`
 }
 
-/** Shared chart wrapper with title, unit hint, and PNG export button. */
+/** Shared chart wrapper with title, unit hint, collapse toggle, and PNG export button. */
 function ChartCard({
   title,
   unit,
   children,
   chartId,
+  defaultCollapsed = false,
 }: {
   title: string
   unit: string
   children: React.ReactNode
   chartId: string
+  defaultCollapsed?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [collapsed, setCollapsed] = useState(defaultCollapsed)
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-          <p className="text-xs text-gray-400">{unit}</p>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-4">
+      {/* Header — always visible */}
+      <div
+        className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+        onClick={() => setCollapsed((c) => !c)}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="text-gray-400 text-xs w-4 shrink-0 transition-transform duration-200"
+            style={{
+              display: 'inline-block',
+              transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            }}
+          >
+            ▼
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-gray-800 truncate">{title}</h3>
+            {!collapsed && <p className="text-xs text-gray-400">{unit}</p>}
+          </div>
         </div>
+        {/* PNG export — stop propagation so click doesn't toggle collapse */}
         <button
-          onClick={() => exportChartAsPng(containerRef.current, chartId)}
-          className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded px-2 py-0.5 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            exportChartAsPng(containerRef.current, chartId)
+          }}
+          className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded px-2 py-0.5 transition-colors shrink-0 ml-2"
           title="Export as PNG"
         >
           ↓ PNG
         </button>
       </div>
-      <div ref={containerRef}>{children}</div>
+
+      {/* Chart body — hidden when collapsed */}
+      {!collapsed && (
+        <div ref={containerRef} className="px-4 pb-4">
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -497,14 +526,15 @@ export function AllCharts({
 }) {
   return (
     <div>
-      <RevenueChart result={result} scenario={scenario} />
+      {/* 1 */ <RevenueChart result={result} scenario={scenario} />}
+      {/* 2 — moved up from last position per PM request */}
+      <LaunchedRevenueChart result={result} scenario={scenario} />
       <FCFChart result={result} scenario={scenario} />
       <CapacityUtilChart result={result} scenario={scenario} />
       <ProductionChart result={result} scenario={scenario} />
       <RockAllocationChart result={result} scenario={scenario} policy={policy} />
       <LeverageChart result={result} scenario={scenario} />
       <UnitCostChart result={result} scenario={scenario} />
-      <LaunchedRevenueChart result={result} scenario={scenario} />
     </div>
   )
 }
